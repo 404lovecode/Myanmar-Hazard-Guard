@@ -36,4 +36,4 @@ jobs:
         with:
           name: HazardGuard-World-v3.2-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: erro
+          if-no-files-found: error
