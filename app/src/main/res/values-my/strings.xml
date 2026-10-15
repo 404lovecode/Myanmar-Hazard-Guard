@@ -1,0 +1,102 @@
+<resources>
+<string name="app_name">မြန်မာ သဘာဝဘေး သတိပေး</string>
+<string name="tagline">ကြိုတင်သိရှိ၊ အသင့်ပြင်ဆင်</string>
+<string name="home">ပင်မ</string><string name="quakes">ငလျင်</string><string name="climate">အယ်လ်နီညို</string><string name="environment">ပတ်ဝန်းကျင်</string><string name="settings">ဆက်တင်</string>
+<string name="monitoring">မြန်မာ သဘာဝဘေး စောင့်ကြည့်မှု</string>
+<string name="hero_title">သင့်ဘေးကင်းရေးအတွက်</string>
+<string name="hero_subtitle">ငလျင်၊ အယ်လ်နီညို၊ ရာသီဥတုနှင့် လေထုအရည်အသွေး အချက်အလက်များ။</string>
+<string name="selected_city">ရွေးထားသောမြို့</string>
+<string name="updated">နောက်ဆုံးအပ်ဒိတ် %1$s</string>
+<string name="not_updated">အချက်အလက် မရသေးပါ</string>
+<string name="refresh">အချက်အလက် အသစ်ရယူရန်</string>
+<string name="refreshing">အချက်အလက်ရင်းမြစ်များ စစ်ဆေးနေသည်…</string>
+<string name="no_network">အင်တာနက် သို့မဟုတ် ရင်းမြစ် ချိတ်ဆက်မရပါ။ သိမ်းထားသောဒေတာကို ပြသနေပါသည်။</string>
+<string name="no_readings">အွန်လိုင်းဒေတာကို စောင့်နေပါသည်</string>
+<string name="quick_view">အခြေအနေ အကျဉ်းချုပ်</string>
+<string name="latest_quake">ဒေသတွင်း နောက်ဆုံး ငလျင်</string>
+<string name="no_quakes">ငလျင်ဒေတာ မရရှိသေးပါ</string>
+<string name="earthquake_note">USGS မှ မှတ်တမ်းတင်ထားသော မြန်မာအနီး ငလျင်များသာဖြစ်ပြီး ငလျင်ကြိုတင်ခန့်မှန်းချက် မဟုတ်ပါ။</string>
+<string name="earthquake_feed">ဒေသတွင်း ငလျင်မှတ်တမ်း</string>
+<string name="earthquake_alert_info">သတ်မှတ်ထားသော ငလျင်ပြင်းအားနှင့်အထက် အသစ်မှတ်တမ်းတင်သည့် ငလျင်များကို အသိပေးပါမည်။</string>
+<string name="quake_age">%1$s အကြာက</string>
+<string name="magnitude">ပြင်းအား</string>
+<string name="earthquakes_empty">ရှာဖွေသည့် ဒေသအတွင်း လတ်တလော ငလျင်မှတ်တမ်း မတွေ့ပါ။</string>
+<string name="climate_index">NOAA ရာသီဥတု စောင့်ကြည့်မှု</string>
+<string name="enso_title">အယ်လ်နီညိုနှင့် လာနီညာ</string>
+<string name="roni_index">နှိုင်းရ ပင်လယ်အပူချိန်ညွှန်းကိန်း (RONI)</string>
+<string name="phase_warm">ပူနွေးသည့် ညွှန်းကိန်းပုံစံ</string>
+<string name="phase_cool">အေးမြသည့် ညွှန်းကိန်းပုံစံ</string>
+<string name="phase_neutral">ပုံမှန် / အပြောင်းအလဲကာလ</string>
+<string name="phase_unknown">အခြေအနေ မသိရသေး</string>
+<string name="roni_unknown">NOAA ဒေတာ မရရှိသေးပါ။</string>
+<string name="roni_disclaimer">RONI သည် ရာသီဥတုညွှန်းကိန်းဖြစ်ပြီး ချက်ချင်းဖြစ်လာမည့် ဘေးအန္တရာယ်သတိပေးချက် မဟုတ်ပါ။ ညွှန်းကိန်းအခြေအနေသည် NOAA ၏ တရားဝင်ခန့်မှန်းချက်နှင့် မတူပါ။</string>
+<string name="enso_prepare">မြန်မာအတွက် ကြိုတင်ပြင်ဆင်မှု</string>
+<string name="enso_tip_1">ပူပြင်းခြောက်သွေ့သည့် အချိန်များတွင် သောက်ရေနှင့် အပူဒဏ်ကာကွယ်ရေးကို ဂရုစိုက်ပါ။</string>
+<string name="enso_tip_2">မိုးရာသီအပြောင်းအလဲတွင် မိုးရွာသွန်းမှုနှင့် ရေကြီးသတိပေးချက်များကို စောင့်ကြည့်ပါ။</string>
+<string name="enso_tip_3">ညွှန်းကိန်းတစ်ခုတည်းထက် တရားဝင် ရာသီအလိုက်ခန့်မှန်းချက်များကို အခြေခံပါ။</string>
+<string name="enso_pattern">ဆက်တိုက်ညွှန်းကိန်းပုံစံ: %1$s</string>
+<string name="yes">ရှိ</string><string name="no">မရှိ</string>
+<string name="weather">မိုးလေဝသ</string><string name="air_quality">လေထုအရည်အသွေး</string>
+<string name="temperature">အပူချိန်</string><string name="humidity">စိုထိုင်းဆ</string><string name="wind">လေတိုက်နှုန်း</string>
+<string name="precipitation">ယခုမိုးရေချိန်</string><string name="max_rain">နောက်နာရီများတွင် အများဆုံးမိုး</string>
+<string name="aqi">US AQI (မော်ဒယ်ခန့်မှန်း)</string><string name="pm25">PM2.5</string><string name="pm10">PM10</string>
+<string name="aqi_good">ကောင်းမွန်</string><string name="aqi_moderate">အသင့်အတင့်</string><string name="aqi_sensitive">ထိခိုက်လွယ်သူများအတွက် မကောင်း</string><string name="aqi_unhealthy">ကျန်းမာရေးအတွက် မကောင်း</string><string name="aqi_very">အလွန်မကောင်း</string><string name="aqi_hazardous">အန္တရာယ်ရှိ</string>
+<string name="aqi_note">Open-Meteo ၏ လေထုအချက်အလက်များသည် မော်ဒယ်ခန့်မှန်းချက်ဖြစ်ပြီး ဒေသခံတိုင်းတာမှုနှင့် ကွာခြားနိုင်ပါသည်။</string>
+<string name="weather_note">Open-Meteo ၏ မိုးလေဝသဒေတာသည် မော်ဒယ်ခန့်မှန်းချက်ဖြစ်ပြီး တရားဝင် မိုးလေဝသသတိပေးချက် မဟုတ်ပါ။</string>
+<string name="preferences">သတိပေးချက် ဆက်တင်များ</string>
+<string name="choose_location">မြန်မာနိုင်ငံအတွင်း မြို့ရွေးရန်</string><string name="language">ဘာသာစကား</string>
+<string name="english">English</string><string name="burmese">မြန်မာ</string>
+<string name="alert_eq">ငလျင်သတိပေးချက်</string>
+<string name="alert_eq_desc">သတ်မှတ်ပြင်းအားထက် မနည်းသော ငလျင်အသစ် မှတ်တမ်းတင်လျှင် အသိပေးရန်</string>
+<string name="alert_enso">ရာသီဥတုအခြေအနေ အသိပေးချက်</string>
+<string name="alert_enso_desc">NOAA ၏ ဆက်တိုက်ညွှန်းကိန်း အဆင့်ပြောင်းလဲလျှင် အသိပေးရန်</string>
+<string name="alert_air">လေထုညစ်ညမ်းမှု အသိပေးချက်</string>
+<string name="alert_air_desc">ခန့်မှန်း US AQI ၁၅၁ နှင့်အထက်ရောက်လျှင် အချိန်ခြား အသိပေးရန်</string>
+<string name="alert_weather">မိုးလေပြင်းထန်မှု အသိပေးချက်</string>
+<string name="alert_weather_desc">မိုးနှင့် လေတိုက်နှုန်း ခန့်မှန်းချက်များမြင့်လျှင် အချိန်ခြား အသိပေးရန်</string>
+<string name="sound">အသံမြည်ရန်</string><string name="vibration">တုန်ခါရန်</string>
+<string name="voice">အက်ပ်ဖွင့်ထားချိန် အသံဖြင့် ဖတ်ပြရန်</string>
+<string name="voice_desc">ဖွင့်ထားချိန် သတိပေးချက်နှင့် စမ်းသပ်မှုကို ဖတ်ပြမည်။ မြန်မာအသံအတွက် ဖုန်းတွင် အသံဒေတာလိုအပ်နိုင်သည်။</string>
+<string name="threshold">အနည်းဆုံး ငလျင်ပြင်းအား</string>
+<string name="test_alert">သတိပေးသံနှင့် တုန်ခါမှု စမ်းသပ်ရန်</string>
+<string name="test_voice">အသံဖတ်ပြမှု စမ်းသပ်ရန်</string>
+<string name="latest_alerts">မကြာသေးမီ အသိပေးချက်များ</string>
+<string name="alerts_empty">ဤဖုန်းတွင် အသိပေးချက်မှတ်တမ်း မရှိသေးပါ။</string>
+<string name="safety_title">အရေးကြီးသော ဘေးကင်းရေးသတိပေးချက်</string>
+<string name="safety_text">ဤအက်ပ်သည် ဖြည့်စွက်အကူအညီသာဖြစ်သည်။ ငလျင်ကို ကြိုတင်မခန့်မှန်းနိုင်ပါ။ အင်တာနက်၊ ဒေတာရင်းမြစ်နှင့် Android ဘက်ထရီစနစ်ကြောင့် အသိပေးချက်များ နောက်ကျနိုင် သို့မဟုတ် မရနိုင်ပါ။ တရားဝင်အဖွဲ့အစည်းများ၏ ညွှန်ကြားချက်များကို လိုက်နာပါ။</string>
+<string name="data_sources">ဒေတာရင်းမြစ်များ</string>
+<string name="source_usgs">USGS • ငလျင်မှတ်တမ်း</string>
+<string name="source_noaa">NOAA CPC • RONI ညွှန်းကိန်း</string>
+<string name="source_meteo">Open-Meteo • မိုးလေဝသနှင့် AQI ခန့်မှန်းချက်</string>
+<string name="source_refresh">၁၅ မိနစ်ခန့်တစ်ကြိမ် နောက်ခံစစ်ဆေးရန် စီစဉ်ထားသော်လည်း Android ကြောင့် နောက်ကျနိုင်ပါသည်။</string>
+<string name="earthquake_notification">မြန်မာအနီး ငလျင်မှတ်တမ်းအသစ်</string>
+<string name="earthquake_notification_body">ပြင်းအား %1$s • %2$s</string>
+<string name="aqi_notification">လေထုအရည်အသွေး မကောင်းနိုင်</string>
+<string name="aqi_notification_body">%2$s အနီး US AQI %1$d ဖြစ်နိုင်သည်။ အပြင်ထွက်ခြင်းကို လျှော့ချပြီး ဒေသခံတိုင်းတာမှု စစ်ဆေးပါ။</string>
+<string name="weather_notification">မိုးလေပြင်းထန်နိုင်ခြေ</string>
+<string name="weather_notification_body">%1$s အတွက် မော်ဒယ်ခန့်မှန်း မိုး %2$s mm/h၊ လေ %3$s km/h။</string>
+<string name="enso_notification">ENSO ညွှန်းကိန်းအခြေအနေ ပြောင်းလဲမှု</string>
+<string name="enso_notification_body">NOAA RONI ညွှန်းကိန်းအရ %1$s ဖြစ်နိုင်သည်။ တရားဝင်ခန့်မှန်းချက်များကို စစ်ဆေးပါ။</string>
+<string name="test_title">စမ်းသပ်သတိပေးချက်သာ ဖြစ်ပါသည်</string>
+<string name="test_body">အသံနှင့် တုန်ခါမှုသည် ဖုန်း၏ ခွင့်ပြုချက်နှင့် အသိပေးချက်ဆက်တင်ပေါ် မူတည်ပါသည်။</string>
+<string name="voice_test_phrase">မြန်မာ သဘာဝဘေး သတိပေး အက်ပ်ကို စမ်းသပ်နေပါသည်။ အရေးပေါ်အခြေအနေ မဟုတ်ပါ။</string>
+<string name="voice_unavailable">ဤဖုန်းတွင် အသံဖတ်ပြစနစ် သို့မဟုတ် ဘာသာစကား မရရှိပါ။</string>
+<string name="permission_help">သဘာဝဘေး အသိပေးချက်များရရန် Notification ခွင့်ပြုပါ။</string>
+<string name="history">လတ်တလော အသိပေးချက်များ</string>
+<string name="source_date">ရင်းမြစ်ဒေတာ: %1$s</string>
+<string name="learn_more">ဘေးကင်းရေး လုပ်ဆောင်ချက်များ</string>
+<string name="quake_tips">မြေငလျင်လှုပ်ချိန်တွင် ဝပ်ချ၊ အကာအကွယ်ယူ၊ တင်းတင်းကိုင်ထားပါ။ မှန်ပြတင်းပေါက်နှင့် ဝေးဝေးနေပါ။ နောက်ဆက်တွဲငလျင်နှင့် တရားဝင်ညွှန်ကြားချက်ကို စောင့်ကြည့်ပါ။</string>
+<string name="no_results_note">မှတ်တမ်းမတွေ့ခြင်းသည် အန္တရာယ်မရှိဟု အဓိပ္ပာယ်မရပါ။</string>
+<string name="last_checked">နောက်ဆုံးစစ်ဆေး: %1$s</string>
+<string name="alerting_off">သတိပေးချက် ပိတ်ထား</string><string name="alerting_on">သတိပေးချက် ဖွင့်ထား</string>
+<string name="city_changed">မြို့ပြောင်းပြီးပါပြီ</string>
+<string name="climate_season">%1$s %2$d</string>
+<string name="never">မရှိသေး</string>
+<string name="quake_depth">အနက် %1$s km</string>
+<string name="unit_aqi">US AQI</string>
+<string name="alarm_sound">ငလျင်အတွက် အသံကျယ် သတိပေးသံ</string>
+<string name="alarm_sound_desc">ပြင်းထန်သော ငလျင်သတိပေးချက်အတွက် အသံကျယ်ကို ရွေးချယ်ဖွင့်နိုင်သည်။ ဖုန်းဆက်တင်က ပြောင်းလဲနိုင်သည်။</string>
+<string name="stale_data">သိမ်းထားသောဒေတာသည် ဟောင်းနေနိုင်သည်</string>
+<string name="notification_settings">Android အသိပေးချက် ခွင့်ပြုချက်</string>
+<string name="notification_settings_help">ဖုန်း၏ Notification ခွင့်ပြုချက်နှင့် သတိပေးသံဆက်တင် ဖွင့်ရန်</string>
+</resources>

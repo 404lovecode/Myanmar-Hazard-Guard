@@ -1,0 +1,10 @@
+VALIDATION REPORT (October 15, 2026)
+====================================
+PASS: bilingual Android resources parse as XML; translation IDs match.
+PASS: local string references match Android resources.
+PASS: Java source syntax parsing with javac; Android unresolved types expected without SDK.
+PASS: RoniParser self-test (4 cases) run using JDK.
+PASS: project Gradle configurations, wrapper class compilation, and GitHub Actions YAML validated.
+NOT RUN: Android Gradle build, emulator tests, real-device tests, live HTTP endpoint tests.
+BLOCKER: This build environment has no Android SDK/build tools, Gradle distribution, or outbound network access.
+THERE IS NO VERIFIED APK IN THIS PACKAGE. Use Android Studio or GitHub Actions to compile one.
