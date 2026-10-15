@@ -21,22 +21,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Apply v3 update
+      - name: Apply v3.2 update
         run: unzip -o HazardGuard_World_v3_2_Event_Details_Update.zip -d .
-        
-      - name: Fix duplicate Burmese translation
+
+      - name: Fix French translation
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          file = Path('app/src/main/res/values-my/strings.xml')
-          data = file.read_text(encoding='utf-8')
-          entry = '<string name="choose_location">'
-          if data.count(entry) > 1:
-              start = data.index(entry)
-              end = data.index('</string>', start) + len('</string>')
-              data = data[:start] + data[end:]
-              file.write_text(data, encoding='utf-8')
-          PY
+          sed -i "s/de l'événement/de cet événement/" app/src/main/res/values-fr/strings.xml
 
       - name: Build installable APK
         run: bash gradlew --no-daemon assembleDebug
@@ -44,6 +34,6 @@ jobs:
       - name: Save APK for download
         uses: actions/upload-artifact@v4
         with:
-          name: HazardGuard-World-v3-APK
+          name: HazardGuard-World-v3.2-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          if-no-files-found: erro
