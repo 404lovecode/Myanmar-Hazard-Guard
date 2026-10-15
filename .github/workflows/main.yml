@@ -22,8 +22,8 @@ jobs:
           java-version: '17'
 
       - name: Apply v3 update
-        run: unzip -o HazardGuard_World_v3_Internet_Fix.zip -d .
-
+        run: unzip -o HazardGuard_World_v3_2_Event_Details_Update.zip -d .
+        
       - name: Fix duplicate Burmese translation
         run: |
           python3 - <<'PY'
