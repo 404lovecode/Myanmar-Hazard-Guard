@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+
     steps:
       - name: Download project
         uses: actions/checkout@v4
@@ -22,6 +23,20 @@ jobs:
 
       - name: Apply v3 update
         run: unzip -o HazardGuard_World_v3_Update.zip -d .
+
+      - name: Fix duplicate Burmese translation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          file = Path('app/src/main/res/values-my/strings.xml')
+          data = file.read_text(encoding='utf-8')
+          entry = '<string name="choose_location">'
+          if data.count(entry) > 1:
+              start = data.index(entry)
+              end = data.index('</string>', start) + len('</string>')
+              data = data[:start] + data[end:]
+              file.write_text(data, encoding='utf-8')
+          PY
 
       - name: Build installable APK
         run: bash gradlew --no-daemon assembleDebug
