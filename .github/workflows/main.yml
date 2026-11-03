@@ -1,7 +1,7 @@
-name: Build HazardGuard v4 APK
+name: Build HazardGuard v5 APK
 on:
   push:
-    branches: [main, cozy-gdacs-emergency-2026]
+    branches: [main, cozy-gdacs-emergency-2026, world-news-72h]
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +35,6 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Myanmar-Hazard-Guard-v4-APK
+          name: Myanmar-Hazard-Guard-v5-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

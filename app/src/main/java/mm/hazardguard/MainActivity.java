@@ -77,6 +77,9 @@ public class MainActivity extends Activity {
     private HazardRepository.Snapshot snapshot;
     private int page=0;
     private boolean worldwideQuakes=false;
+    private boolean headlinesLoading=false;
+    private JSONObject headlines=new JSONObject();
+
     private boolean busy=false, voiceReady=false;
     private LocationManager pendingLocationManager;
     private LocationListener pendingLocationListener;
@@ -94,6 +97,7 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(lightMode?
             (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR):0);
         snapshot=HazardRepository.snapshot(this);
+        headlines=WorldNewsFeed.cached(this, newsLanguage(), newsTopic());
         Notifications.setup(this);
         MonitorJob.schedule(this);
         tts=new TextToSpeech(this,status -> { voiceReady=status==TextToSpeech.SUCCESS; if(voiceReady) configureSpeech(); });
@@ -208,7 +212,8 @@ public class MainActivity extends Activity {
         buildHeader(column);
         pageBody=vertical();pageBody.setPadding(dp(18),dp(12),dp(18),dp(34));column.addView(pageBody);
         if(page==0) showHome();else if(page==1) showQuakes();else if(page==2) showClimate();
-        else if(page==3) showEnvironment();else if(page==4) showWorld();else showSettings();
+        else if(page==3) showEnvironment();else if(page==4) showWorld();
+        else if(page==6) showGlobalHeadlines(); else showSettings();
         buildEmergencyShortcut(root);
         buildNav(root);
     }
@@ -224,7 +229,8 @@ public class MainActivity extends Activity {
         language.setOnClickListener(v->chooseLanguage());small.addView(language);
         h.addView(small);space(h,20);
         add(h,text(page==0?t(R.string.hero_title):
-            page==1?t(R.string.quakes):page==2?t(R.string.enso_title):page==3?t(R.string.environment):page==4?t(R.string.world):t(R.string.settings),27,WHITE,true));
+            page==1?t(R.string.quakes):page==2?t(R.string.enso_title):page==3?t(R.string.environment):page==4?t(R.string.world):
+            page==6?newsText("Global news"):t(R.string.settings),27,WHITE,true));
         space(h,7);
         add(h,text(page==0?t(R.string.hero_subtitle):t(R.string.global_monitoring),13,0xffc8f4ef,false));
         space(h,18);
@@ -342,6 +348,7 @@ public class MainActivity extends Activity {
         add(world,text(worldEvents==null?t(R.string.no_readings):worldEvents.length()+" "+t(R.string.tracked_events),27,TEAL,true));
         space(world,7);paragraph(world,t(R.string.eonet_note));dataAge(world,snapshot.eventsAt);
         world.setOnClickListener(v->{page=4;draw();});
+        newsEntryCard(true);
         section(t(R.string.news_heading));showNews(3);
         section(t(R.string.latest_alerts));showHistory(3);
         section(t(R.string.data_sources));sources();
@@ -493,6 +500,7 @@ public class MainActivity extends Activity {
     }
     private void showWorld() {
         refreshButton();
+        newsEntryCard(true);
         section(t(R.string.news_heading));showNews(20);
         section(t(R.string.global_coverage));
         LinearLayout intro=card();
@@ -645,6 +653,156 @@ public class MainActivity extends Activity {
             return !parsed.getHost().equalsIgnoreCase("eonet.gsfc.nasa.gov") ||
                 path==null || !path.startsWith("/api/");
         }catch(Exception ex){return false;}
+    }
+
+    /** General world news is intentionally separate from verified GDACS disaster notices. */
+    private String newsLanguage() {
+        String language=Prefs.get(this).getString("world_news_language", "");
+        if(language.isEmpty()) language=Prefs.language(this);
+        return WorldNewsFeed.LANGS[WorldNewsFeed.langIndex(language)];
+    }
+    private String newsTopic() {
+        String topic=Prefs.get(this).getString("world_news_topic","world");
+        return WorldNewsFeed.TOPICS[WorldNewsFeed.topicIndex(topic)];
+    }
+    private String newsText(String english) {
+        String lang=Prefs.language(this);
+        if("my".equals(lang)) {
+            if("Global news".equals(english))return "ကမ္ဘာ့သတင်း";
+            if("News from the last 72 hours".equals(english))return "နောက်ဆုံး ၇၂ နာရီအတွင်း သတင်းများ";
+            if("72-hour emergency kit".equals(english))return "၇၂ နာရီ အရေးပေါ်အသုံးအဆောင်များ";
+        } else if("th".equals(lang)) {
+            if("Global news".equals(english))return "ข่าวทั่วโลก";
+            if("News from the last 72 hours".equals(english))return "ข่าวในช่วง 72 ชั่วโมงที่ผ่านมา";
+            if("72-hour emergency kit".equals(english))return "ชุดฉุกเฉิน 72 ชั่วโมง";
+        } else if("es".equals(lang)) {
+            if("Global news".equals(english))return "Noticias mundiales";
+            if("News from the last 72 hours".equals(english))return "Noticias de las últimas 72 horas";
+        } else if("fr".equals(lang)) {
+            if("Global news".equals(english))return "Actualités mondiales";
+            if("News from the last 72 hours".equals(english))return "Actualités des dernières 72 heures";
+        } else if("hi".equals(lang)) {
+            if("Global news".equals(english))return "विश्व समाचार";
+        } else if("id".equals(lang)) {
+            if("Global news".equals(english))return "Berita dunia";
+        }
+        return english;
+    }
+    private void newsEntryCard(boolean showKit) {
+        LinearLayout entry=card();
+        add(entry,chip("🌐  "+newsText("Global news"),TEAL,MINT));space(entry,10);
+        add(entry,text(newsText("News from the last 72 hours"),19,INK,true));space(entry,7);
+        paragraph(entry,"World • Protests • Disasters • Food • Health • Technology • Climate");
+        space(entry,11);
+        TextView explore=button("↗  "+newsText("Global news"),TEAL,BUTTON_TEXT);
+        explore.setOnClickListener(v->openHeadlines());entry.addView(explore);
+        if(showKit) {space(entry,9);TextView kit=button("✚  "+newsText("72-hour emergency kit"),SECONDARY_BUTTON,TEAL);
+            kit.setOnClickListener(v->show72HourKit());entry.addView(kit);}
+    }
+    private void openHeadlines() {
+        page=6;headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic());draw();loadHeadlines(false);
+    }
+    @Override public void onBackPressed() {
+        if(page==6){page=4;draw();}else super.onBackPressed();
+    }
+    private void loadHeadlines(boolean force) {
+        if(headlinesLoading)return;
+        headlinesLoading=true;draw();
+        final String language=newsLanguage(), topic=newsTopic();
+        new Thread(()->{
+            JSONObject data=WorldNewsFeed.load(getApplicationContext(),language,topic,force);
+            ui.post(()->{
+                if(isFinishing() || isDestroyed())return;
+                headlinesLoading=false;headlines=data;
+                if(page==6 && language.equals(newsLanguage()) && topic.equals(newsTopic()))draw();
+            });
+        },"WorldNews-rss").start();
+    }
+    private void selectNewsLanguage() {
+        new AlertDialog.Builder(this).setTitle("News language / edition")
+            .setSingleChoiceItems(WorldNewsFeed.NAMES,WorldNewsFeed.langIndex(newsLanguage()),(dialog,which)->{
+                Prefs.get(this).edit().putString("world_news_language",WorldNewsFeed.LANGS[which]).apply();
+                dialog.dismiss();headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic());draw();loadHeadlines(false);
+            }).setNegativeButton(android.R.string.cancel,null).show();
+    }
+    private void selectNewsTopic() {
+        new AlertDialog.Builder(this).setTitle("News topic")
+            .setSingleChoiceItems(WorldNewsFeed.TOPIC_NAMES,WorldNewsFeed.topicIndex(newsTopic()),(dialog,which)->{
+                Prefs.get(this).edit().putString("world_news_topic",WorldNewsFeed.TOPICS[which]).apply();
+                dialog.dismiss();headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic());draw();loadHeadlines(false);
+            }).setNegativeButton(android.R.string.cancel,null).show();
+    }
+    private void showGlobalHeadlines() {
+        LinearLayout intro=card();
+        add(intro,chip("🌏  NEWS • 72H",TEAL,MINT));space(intro,8);
+        add(intro,text(newsText("News from the last 72 hours"),21,INK,true));space(intro,7);
+        paragraph(intro,"Public news headlines, not government emergency alerts. Stories retain the publisher's language; open them in your browser to read or translate.");
+        space(intro,12);
+        TextView lang=button("🌐  "+WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(newsLanguage())]+"  ▾",SECONDARY_BUTTON,TEAL);
+        lang.setOnClickListener(v->selectNewsLanguage());intro.addView(lang);space(intro,9);
+        TextView topic=button("☷  "+WorldNewsFeed.TOPIC_NAMES[WorldNewsFeed.topicIndex(newsTopic())]+"  ▾",SECONDARY_BUTTON,TEAL);
+        topic.setOnClickListener(v->selectNewsTopic());intro.addView(topic);space(intro,9);
+        TextView refresh=button(headlinesLoading?"Fetching news…":"↻  Refresh latest headlines",TEAL,BUTTON_TEXT);
+        refresh.setEnabled(!headlinesLoading);refresh.setOnClickListener(v->loadHeadlines(true));intro.addView(refresh);
+        long updated=headlines.optLong("updatedAt",0);
+        if(updated>0){space(intro,9);add(intro,text("Feed checked: "+time(updated)+" • "+duration(updated)+" ago",11,MUTED,false));}
+        String failed=headlines.optString("loadError","");
+        if(!failed.isEmpty()){space(intro,9);add(intro,text("Unable to refresh. Showing saved headlines if available. " + failed,12,ORANGE,true));}
+        int ok=headlines.optInt("providers",0), expected=headlines.optInt("expectedProviders",0);
+        if(ok>0 && expected>ok) {space(intro,6);add(intro,text("Only "+ok+" of "+expected+" language editions responded.",11,ORANGE,true));}
+        TextView original=text("Google News RSS • Original-language headlines • 72-hour publication window",11,MUTED,false);
+        original.setPadding(0,dp(10),0,0);intro.addView(original);
+        JSONArray items=headlines.optJSONArray("items");
+        if(items==null || items.length()==0) {
+            LinearLayout empty=card();paragraph(empty,headlinesLoading?"Loading headlines…":
+                "No verified recent headlines for this edition/topic. Check internet access, choose another language, or try again.");
+        } else {
+            section("Headlines ("+items.length()+")");
+            for(int i=0;i<Math.min(40,items.length());i++) {
+                JSONObject story=items.optJSONObject(i);if(story==null)continue;
+                String url=story.optString("link","");
+                LinearLayout item=card();
+                add(item,text(story.optString("title",""),15,INK,true));space(item,9);
+                String src=story.optString("source","").trim();
+                String language=story.optString("language","en").toUpperCase(Locale.ROOT);
+                long published=story.optLong("time",0);
+                add(item,text((src.isEmpty()?"News":src)+" • "+language+
+                    (published>0?" • "+time(published)+" ("+duration(published)+" ago)":""),11,MUTED,false));
+                space(item,8);add(item,text("Read article  ↗",12,TEAL,true));
+                if(url.startsWith("https://"))item.setOnClickListener(v->open(url));
+            }
+        }
+        section(newsText("72-hour emergency kit"));
+        LinearLayout kit=card();
+        paragraph(kit,"Prepare supplies before any emergency; this is general guidance, not a claim that a disaster is imminent.");
+        space(kit,9);
+        TextView openKit=button("✚  Open 72-hour checklist",SECONDARY_BUTTON,TEAL);
+        openKit.setOnClickListener(v->show72HourKit());kit.addView(openKit);
+        TextView back=button("‹  Back to World disasters",SECONDARY_BUTTON,TEAL);
+        back.setOnClickListener(v->{page=4;draw();});pageBody.addView(back);
+    }
+    private void show72HourKit() {
+        ScrollView scroller=new ScrollView(this);
+        LinearLayout body=vertical();body.setPadding(dp(20),dp(16),dp(20),dp(20));scroller.addView(body);
+        add(body,text(newsText("72-hour emergency kit"),22,INK,true));space(body,10);
+        add(body,text("Prepare supplies for at least 3 days for every household member. Adjust for infants, pets, medical needs and local conditions.",14,INK,false));
+        space(body,12);
+        String[] checks={
+            "✓ Water — at least one gallon per person per day, for three days (drinking and sanitation)",
+            "✓ Three-day supply of shelf-stable food, including any special dietary items",
+            "✓ Essential medicines, first-aid kit and personal hygiene supplies",
+            "✓ Phone charger, power bank, flashlight, batteries and battery radio",
+            "✓ Important documents, contact numbers, cash and a family meeting plan",
+            "✓ Manual can opener, whistle, local maps and a sturdy bag",
+            "✓ Adapt supplies for children, older adults, disabilities and pets"
+        };
+        for(String line:checks){TextView v=text(line,14,INK,false);v.setPadding(0,dp(7),0,dp(7));body.addView(v);}
+        space(body,12);
+        add(body,text("Sources: Ready.gov emergency supply kit. Follow local civil-defense and evacuation instructions during actual emergencies.",12,MUTED,false));
+        space(body,9);
+        TextView source=button("↗  Read official preparedness guidance",SECONDARY_BUTTON,TEAL);
+        source.setOnClickListener(v->open("https://www.ready.gov/kit"));body.addView(source);
+        new AlertDialog.Builder(this).setView(scroller).setPositiveButton(android.R.string.ok,null).show();
     }
 
     private void showNews(int limit) {

@@ -16,3 +16,26 @@ The Android debug APK builds in GitHub Actions from the **checked-in source code
 Emergency numbers are published by UK FCDO: https://www.gov.uk/foreign-travel-advice/myanmar/getting-help , and equivalent country getting-help pages. Before depending on the app, verify numbers with local organizations. No app can guarantee response time, continuous network connectivity, precise position, or emergency-call success.
 
 GDACS is credited to the Global Disaster Alert and Coordination System. See https://www.gdacs.org/feed_reference.aspx and https://www.gdacs.org/.
+
+
+## v5.0 — World headlines and 72-hour preparedness
+
+- Dedicated World News screen linked from Home and World. The existing GDACS disaster
+  bulletins remain **separate** from general news.
+- Public Google News RSS headlines with a **72-hour publication window** and timestamp
+  labels, from World, Protests & civic events, Disasters, Food & humanitarian,
+  Health, Technology, and Climate.
+- Choose from 23 specific editions/languages or a curated **8-edition multilingual mix**.
+  Headlines display in their publisher's language; no automatic translation or claim
+  that every language in the world is available. Articles open in the user's browser,
+  which may offer translation depending on the browser.
+- Refresh and 10-minute local cache, offline/stale warnings, HTTPS-only links and
+  bounded RSS XML parsing. No account, news API key or payments.
+- 72-hour preparedness checklist for water, non-perishable food, medicines, light,
+  communications, documents and household-specific needs. Based on
+  https://www.ready.gov/kit. This checklist is preparation, **not** a claim of an
+  imminent emergency.
+- News coverage and language availability depend on public feeds, network access
+  and publisher editions. Headlines are **not** verified official emergency alerts.
+- No protest prediction, location tracking for news, automated calls or social
+  surveillance. Emergency dialer remains user-initiated.
