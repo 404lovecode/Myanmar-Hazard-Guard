@@ -903,8 +903,8 @@ public class MainActivity extends Activity {
                 }
                 if(WorldNewsFeed.safeNewsUrl(url)) {
                     TextView read=button("↗  "+translateCaption("Read in app"),TEAL,BUTTON_TEXT);
-                    final String original=url;
-                    read.setOnClickListener(v->showInAppNews(original,title,from,targetLanguage));
+                    final String storyUrl=url;
+                    read.setOnClickListener(v->showInAppNews(storyUrl,title,from,targetLanguage));
                     item.addView(read);
                 }
             }
