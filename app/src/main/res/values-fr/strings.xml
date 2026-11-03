@@ -52,7 +52,7 @@
 <string name="feeds_unavailable">Aucune source ne répond actuellement. Affichage des données locales.</string>
 
 <!-- EONET readable event detail screen -->
-<string name="event_tap_details">Voir les détails de l'événement</string>
+<string name="event_tap_details">Voir les détails de cet événement</string>
 <string name="event_active">Événement suivi</string>
 <string name="event_closed">Événement terminé</string>
 <string name="event_first_observed">Première observation</string>
