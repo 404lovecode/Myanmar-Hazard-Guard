@@ -665,6 +665,68 @@ public class MainActivity extends Activity {
         String topic=Prefs.get(this).getString("world_news_topic","world");
         return WorldNewsFeed.TOPICS[WorldNewsFeed.topicIndex(topic)];
     }
+
+    // Translation is a separate preference: readers can follow any news edition
+    // and translate a headline into the language that they understand.
+    private String newsTranslationLanguage() {
+        String selected=Prefs.get(this).getString("world_news_translate_language","");
+        if(selected.isEmpty())selected=newsLanguage();
+        if("mix".equals(selected))selected=Prefs.language(this);
+        int index=WorldNewsFeed.langIndex(selected);
+        if(index==0)index=1;
+        return WorldNewsFeed.LANGS[index];
+    }
+    private void selectTranslationLanguage() {
+        String[] options=WorldNewsFeed.NAMES.clone();
+        options[0]=translateCaption("Follow selected news/app language");
+        String selected=Prefs.get(this).getString("world_news_translate_language","");
+        int checked=selected.isEmpty()?0:WorldNewsFeed.langIndex(selected);
+        new AlertDialog.Builder(this)
+            .setTitle(translateCaption("Translate articles to"))
+            .setSingleChoiceItems(options,checked,(dialog,which)->{
+                Prefs.get(this).edit().putString("world_news_translate_language",
+                    which==0?"":WorldNewsFeed.LANGS[which]).apply();
+                dialog.dismiss();
+                draw();
+            }).setNegativeButton(android.R.string.cancel,null).show();
+    }
+    private String translateCaption(String en) {
+        String lang=Prefs.language(this);
+        if("my".equals(lang)) {
+            if("Translate articles to".equals(en))return "သတင်းများ ဘာသာပြန်မည့် ဘာသာစကား";
+            if("Translate headline".equals(en))return "ခေါင်းစဉ် ဘာသာပြန်ရန်";
+            if("Read translated article".equals(en))return "ဘာသာပြန်ထားသည့်သတင်း ဖတ်ရန်";
+            if("Read original".equals(en))return "မူရင်းသတင်း ဖတ်ရန်";
+            if("Follow selected news/app language".equals(en))return "ရွေးထားသော သတင်း / အက်ပ် ဘာသာစကားအတိုင်း";
+        } else if("th".equals(lang)) {
+            if("Translate articles to".equals(en))return "แปลข่าวเป็นภาษา";
+            if("Translate headline".equals(en))return "แปลพาดหัวข่าว";
+            if("Read translated article".equals(en))return "อ่านข่าวฉบับแปล";
+            if("Read original".equals(en))return "อ่านต้นฉบับ";
+            if("Follow selected news/app language".equals(en))return "ตามภาษาข่าวหรือแอป";
+        } else if("es".equals(lang)) {
+            if("Translate articles to".equals(en))return "Traducir noticias a";
+            if("Translate headline".equals(en))return "Traducir titular";
+            if("Read translated article".equals(en))return "Leer noticia traducida";
+            if("Read original".equals(en))return "Leer original";
+        } else if("fr".equals(lang)) {
+            if("Translate articles to".equals(en))return "Traduire les articles en";
+            if("Translate headline".equals(en))return "Traduire le titre";
+            if("Read translated article".equals(en))return "Lire l'article traduit";
+            if("Read original".equals(en))return "Lire l'original";
+        } else if("hi".equals(lang)) {
+            if("Translate articles to".equals(en))return "खबरों का अनुवाद करें";
+            if("Translate headline".equals(en))return "शीर्षक अनुवाद करें";
+            if("Read translated article".equals(en))return "अनूदित खबर पढ़ें";
+            if("Read original".equals(en))return "मूल खबर पढ़ें";
+        } else if("id".equals(lang)) {
+            if("Translate articles to".equals(en))return "Terjemahkan berita ke";
+            if("Translate headline".equals(en))return "Terjemahkan judul";
+            if("Read translated article".equals(en))return "Baca berita terjemahan";
+            if("Read original".equals(en))return "Baca berita asli";
+        }
+        return en;
+    }
     private String newsText(String english) {
         String lang=Prefs.language(this);
         if("my".equals(lang)) {
@@ -736,10 +798,17 @@ public class MainActivity extends Activity {
         LinearLayout intro=card();
         add(intro,chip("🌏  NEWS • 72H",TEAL,MINT));space(intro,8);
         add(intro,text(newsText("News from the last 72 hours"),21,INK,true));space(intro,7);
-        paragraph(intro,"Public news headlines, not government emergency alerts. Stories retain the publisher's language; open them in your browser to read or translate.");
+        paragraph(intro, "my".equals(Prefs.language(this))
+            ?"သတင်းများသည် တရားဝင်အရေးပေါ်သတိပေးချက်များ မဟုတ်ပါ။ မူရင်းသတင်းကို အောက်တွင်ဖော်ပြထားပြီး သင်ရွေးထားသော ဘာသာစကားသို့ ဘာသာပြန်ကြည့်ရှုနိုင်သည်။"
+            :"Public news headlines are not official emergency alerts. Keep original headlines visible, and translate them using your selected language.");
         space(intro,12);
         TextView lang=button("🌐  "+WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(newsLanguage())]+"  ▾",SECONDARY_BUTTON,TEAL);
         lang.setOnClickListener(v->selectNewsLanguage());intro.addView(lang);space(intro,9);
+        String target=newsTranslationLanguage();
+        TextView translation=button("🌐  "+translateCaption("Translate articles to")+"  •  "+
+            WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(target)]+"  ▾",SECONDARY_BUTTON,TEAL);
+        translation.setOnClickListener(v->selectTranslationLanguage());
+        intro.addView(translation);space(intro,9);
         TextView topic=button("☷  "+WorldNewsFeed.TOPIC_NAMES[WorldNewsFeed.topicIndex(newsTopic())]+"  ▾",SECONDARY_BUTTON,TEAL);
         topic.setOnClickListener(v->selectNewsTopic());intro.addView(topic);space(intro,9);
         TextView refresh=button(headlinesLoading?"Fetching news…":"↻  Refresh latest headlines",TEAL,BUTTON_TEXT);
@@ -750,7 +819,9 @@ public class MainActivity extends Activity {
         if(!failed.isEmpty()){space(intro,9);add(intro,text("Unable to refresh. Showing saved headlines if available. " + failed,12,ORANGE,true));}
         int ok=headlines.optInt("providers",0), expected=headlines.optInt("expectedProviders",0);
         if(ok>0 && expected>ok) {space(intro,6);add(intro,text("Only "+ok+" of "+expected+" language editions responded.",11,ORANGE,true));}
-        TextView original=text("Google News RSS • Original-language headlines • 72-hour publication window",11,MUTED,false);
+        TextView original=text("my".equals(Prefs.language(this))
+            ?"ဘာသာပြန်ရန် နှိပ်ပါ • အင်တာနက် လိုအပ်သည် • ဘာသာပြန်ချက်များ မှားယွင်းနိုင်သည်"
+            :"Google News RSS • Last 72 hours • Tap Translate to open free web translation. Network needed; verify crucial safety reports with official sources.",11,MUTED,false);
         original.setPadding(0,dp(10),0,0);intro.addView(original);
         JSONArray items=headlines.optJSONArray("items");
         if(items==null || items.length()==0) {
@@ -768,8 +839,26 @@ public class MainActivity extends Activity {
                 long published=story.optLong("time",0);
                 add(item,text((src.isEmpty()?"News":src)+" • "+language+
                     (published>0?" • "+time(published)+" ("+duration(published)+" ago)":""),11,MUTED,false));
-                space(item,8);add(item,text("Read article  ↗",12,TEAL,true));
-                if(url.startsWith("https://"))item.setOnClickListener(v->open(url));
+                space(item,10);
+                final String title=story.optString("title","");
+                final String targetLanguage=newsTranslationLanguage();
+                final String translateTitleUrl=NewsTranslation.headlineUrl(title,targetLanguage);
+                final String translatePageUrl=NewsTranslation.websiteUrl(url,targetLanguage);
+                if(!translateTitleUrl.isEmpty()) {
+                    TextView translate=button("文  "+translateCaption("Translate headline"),TEAL,BUTTON_TEXT);
+                    translate.setOnClickListener(v->open(translateTitleUrl));
+                    item.addView(translate);space(item,7);
+                }
+                if(!translatePageUrl.isEmpty()) {
+                    TextView translated=button("🌐  "+translateCaption("Read translated article"),SECONDARY_BUTTON,TEAL);
+                    translated.setOnClickListener(v->open(translatePageUrl));
+                    item.addView(translated);space(item,7);
+                }
+                if(WorldNewsFeed.safeNewsUrl(url)) {
+                    TextView read=button("↗  "+translateCaption("Read original"),SECONDARY_BUTTON,TEAL);
+                    read.setOnClickListener(v->open(url));
+                    item.addView(read);
+                }
             }
         }
         section(newsText("72-hour emergency kit"));

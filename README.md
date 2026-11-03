@@ -39,3 +39,28 @@ GDACS is credited to the Global Disaster Alert and Coordination System. See http
   and publisher editions. Headlines are **not** verified official emergency alerts.
 - No protest prediction, location tracking for news, automated calls or social
   surveillance. Emergency dialer remains user-initiated.
+
+
+## v6.0 — one-tap World News translation
+
+- World News now has an independent **Translate articles to** language selector.
+  It follows the chosen news/app edition unless the reader overrides it.
+- Every eligible story retains the publisher's original-language headline and offers:
+  **Translate headline**, **Read translated article**, and **Read original**.
+- Translation opens Google Translate's public web interface on demand. It supports
+  Burmese (Myanmar) and other target languages without any translation API key,
+  account or subscription. An Internet connection is required.
+- Some news sites cannot be translated by third-party website translation due to
+  restrictions. The original article is always available separately.
+- Headlines and URLs are shared with Google Translate **only if the user taps** one
+  of the translation options. The app does not silently forward news to translation.
+- Translated text is machine generated and may contain errors, especially for
+  emergency safety instructions. Verify urgent information with official sources.
+- This is **not** automatic inline/offline translated headlines. Google ML Kit's
+  offline translator currently does not support Burmese; this feature uses a
+  user-initiated external translation website instead.
+
+## Technical notes
+The translated headline link is URL encoded and capped in length.
+Original story links must be valid HTTPS URLs. Unit checks run during the
+GitHub Actions build before packaging.

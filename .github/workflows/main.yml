@@ -1,7 +1,7 @@
-name: Build HazardGuard v5 APK
+name: Build HazardGuard v6 APK
 on:
   push:
-    branches: [main, cozy-gdacs-emergency-2026, world-news-72h]
+    branches: [main, cozy-gdacs-emergency-2026, world-news-72h, world-news-translation-v6]
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,10 +31,15 @@ jobs:
           mkdir -p /tmp/hazard-tests
           javac -d /tmp/hazard-tests app/src/main/java/mm/hazardguard/EmergencyContacts.java tools/EmergencyContactsSelfTest.java
           java -cp /tmp/hazard-tests EmergencyContactsSelfTest
+      - name: Test safe translation links and Burmese support
+        run: |
+          mkdir -p /tmp/news-translation-tests
+          javac -encoding UTF-8 -d /tmp/news-translation-tests app/src/main/java/mm/hazardguard/NewsTranslation.java tools/NewsTranslationSelfTest.java
+          java -cp /tmp/news-translation-tests NewsTranslationSelfTest
       - name: Build APK from checked-in sources
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Myanmar-Hazard-Guard-v5-APK
+          name: Myanmar-Hazard-Guard-v6-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
