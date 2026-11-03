@@ -57,19 +57,19 @@ public class MainActivity extends Activity {
         lightMode="light".equals(mode) || ("system".equals(mode) &&
             (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)!=Configuration.UI_MODE_NIGHT_YES);
         if(lightMode) {
-            NAVY=0xff10304c; INK=0xff15263a; MUTED=0xff576b7a; TEAL=0xff007f77;
-            MINT=0xffd9f3ec; BG=0xfff1f7fa; SURFACE=0xffffffff; ORANGE=0xffa35a19;
-            PALE=0xfffff0df; PURPLE=0xff6754bb; BLUE=0xff205ea2;
-            CELL=0xffeaf3f7; BORDER=0xffd3e2e8; NAV=0xffffffff;
-            CHIPBLUE=0xffe4f0ff; CHIPPURPLE=0xffeee9fb; SECONDARY_BUTTON=0xffd7f3ed;
-            ACTIVE_NAV=0xffd8f2eb;BUTTON_TEXT=WHITE;
+            NAVY=0xff173e40; INK=0xff203a38; MUTED=0xff617b76; TEAL=0xff147d70;
+            MINT=0xffe1f3e7; BG=0xfff8f7f1; SURFACE=0xffffffff; ORANGE=0xffb65c38;
+            PALE=0xffffebe0; PURPLE=0xff7162ad; BLUE=0xff246d90;
+            CELL=0xfff0f5ec; BORDER=0xffdae7df; NAV=0xffffffff;
+            CHIPBLUE=0xffe5f1f4; CHIPPURPLE=0xfff1edfb; SECONDARY_BUTTON=0xffe2f5ed;
+            ACTIVE_NAV=0xffe2f2e7;BUTTON_TEXT=WHITE;
         } else {
-            NAVY=0xff071a2b; INK=0xfff0f6ff; MUTED=0xffadc1d6; TEAL=0xff3be3bb;
-            MINT=0xff143d42; BG=0xff081522; SURFACE=0xff14263a; ORANGE=0xffffb67b;
-            PALE=0xff3f3036; PURPLE=0xffb9a8ff; BLUE=0xff81c5ff;
-            CELL=0xff1c344a; BORDER=0xff314457; NAV=0xff101f31;
-            CHIPBLUE=0xff193149; CHIPPURPLE=0xff2e2947; SECONDARY_BUTTON=0xff163e42;
-            ACTIVE_NAV=0xff224d51; BUTTON_TEXT=0xff071a2b;
+            NAVY=0xff14292b; INK=0xfff4f2eb; MUTED=0xffb3c6bc; TEAL=0xff8ce3c0;
+            MINT=0xff22463e; BG=0xff101f20; SURFACE=0xff1b3030; ORANGE=0xffffc091;
+            PALE=0xff46372f; PURPLE=0xffd1c0ff; BLUE=0xffa5d7e3;
+            CELL=0xff263e3c; BORDER=0xff3c5450; NAV=0xff162a2a;
+            CHIPBLUE=0xff254446; CHIPPURPLE=0xff3b3450; SECONDARY_BUTTON=0xff23473e;
+            ACTIVE_NAV=0xff31594d; BUTTON_TEXT=0xff102b26;
         }
     }
     private LinearLayout root, pageBody;
@@ -161,7 +161,7 @@ public class MainActivity extends Activity {
     private void space(LinearLayout parent,int dp){View v=new View(this);parent.addView(v,new LinearLayout.LayoutParams(1,dp(dp)));}
     private LinearLayout card() {
         LinearLayout c=vertical();c.setPadding(dp(18),dp(17),dp(18),dp(17));
-        c.setBackground(background(SURFACE,22));c.setElevation(dp(3));
+        c.setBackground(background(SURFACE,24));c.setElevation(dp(2));
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(14);
         pageBody.addView(c,lp);return c;
     }
@@ -209,13 +209,14 @@ public class MainActivity extends Activity {
         pageBody=vertical();pageBody.setPadding(dp(18),dp(12),dp(18),dp(34));column.addView(pageBody);
         if(page==0) showHome();else if(page==1) showQuakes();else if(page==2) showClimate();
         else if(page==3) showEnvironment();else if(page==4) showWorld();else showSettings();
+        buildEmergencyShortcut(root);
         buildNav(root);
     }
     private void buildHeader(LinearLayout column) {
         LinearLayout h=vertical();h.setPadding(dp(22),dp(24),dp(22),dp(24));
-        h.setBackground(gradient(0xff102d49,0xff086e68,0));
+        h.setBackground(gradient(0xff204c49,0xff35675a,0));
         LinearLayout small=horizontal();
-        TextView logo=text("✺",25,TEAL,true);
+        TextView logo=text("✦",25,0xffffe2ac,true);
         small.addView(logo);TextView name=text("  HAZARDGUARD WORLD",14,WHITE,true);name.setLetterSpacing(0.03f);
         name.setSingleLine(true);name.setEllipsize(android.text.TextUtils.TruncateAt.END);
         small.addView(name,new LinearLayout.LayoutParams(0,-2,1f));
@@ -263,7 +264,7 @@ public class MainActivity extends Activity {
         busy=true;draw();
         new Thread(()->{
             HazardRepository.Snapshot updated;
-            try {updated=HazardRepository.update(getApplicationContext(),true);}
+            try {updated=HazardRepository.update(getApplicationContext(),true,true);}
             catch(Exception ignored) {updated=HazardRepository.snapshot(getApplicationContext());updated.failed=4;}
             final HazardRepository.Snapshot result=updated;
             ui.post(()->{
@@ -288,7 +289,7 @@ public class MainActivity extends Activity {
     }
     private void showHome() {
         LinearLayout overview=vertical();overview.setPadding(dp(18),dp(18),dp(18),dp(18));
-        overview.setBackground(gradient(0xff2d354e,0xff153946,20));
+        overview.setBackground(gradient(0xff365b51,0xff24443d,24));
         LinearLayout status=horizontal();
         add(status,text("✦  "+t(R.string.global_monitoring),12,0xff75fae1,true));
         status.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));
@@ -651,9 +652,21 @@ public class MainActivity extends Activity {
         add(intro,chip("◷  GDACS",ORANGE,PALE));space(intro,8);
         paragraph(intro,t(R.string.news_explain));
         dataAge(intro,snapshot.newsAt);
+        for(int j=0;j<snapshot.sourceReport.length();j++) {
+            JSONObject status=snapshot.sourceReport.optJSONObject(j);
+            if(status!=null && "GDACS news".equals(status.optString("source")) &&
+               "failed".equals(status.optString("status"))) {
+                space(intro,8);
+                add(intro,text(t(R.string.gdacs_unavailable),12,ORANGE,true));
+                break;
+            }
+        }
+        TextView retry=button("↻  "+t(R.string.refresh),MINT,TEAL);
+        retry.setOnClickListener(v->refresh());space(intro,9);intro.addView(retry);
         JSONArray items=snapshot.news.optJSONArray("items");
         if(items==null || items.length()==0){
-            LinearLayout empty=card();paragraph(empty,t(R.string.news_empty));return;
+            LinearLayout empty=card();paragraph(empty,snapshot.newsAt==0?
+                t(R.string.gdacs_no_verified):t(R.string.news_empty));return;
         }
         for(int i=0;i<Math.min(limit,items.length());i++) {
             JSONObject item=items.optJSONObject(i);if(item==null)continue;
@@ -677,6 +690,75 @@ public class MainActivity extends Activity {
             if(o!=null)return o.optString("title",t(R.string.world_events));
         }
         return t(R.string.world_events);
+    }
+
+    // User-initiated dialer: NEVER place calls automatically or infer a universal number.
+    private void buildEmergencyShortcut(LinearLayout parent) {
+        LinearLayout bar=horizontal();
+        bar.setPadding(dp(13),dp(9),dp(13),dp(9));
+        bar.setBackgroundColor(lightMode?0xfffff1ea:0xff352824);
+        LinearLayout copy=vertical();
+        add(copy,text("✚  "+t(R.string.emergency_shortcut),14,lightMode?0xff9a332a:0xffffbba0,true));
+        add(copy,text(t(R.string.emergency_subline),11,MUTED,false));
+        bar.addView(copy,new LinearLayout.LayoutParams(0,-2,1));
+        TextView action=button(t(R.string.emergency_open),0xffb8493c,WHITE);
+        action.setOnClickListener(v->showEmergencyHelp());
+        bar.addView(action);parent.addView(bar);
+    }
+    private void showEmergencyHelp() {
+        String override=Prefs.get(this).getString("emergency_country","");
+        String code=override.isEmpty()?Prefs.countryCode(this):override;
+        EmergencyContacts.Country c=EmergencyContacts.forCode(code);
+        ScrollView scroller=new ScrollView(this);
+        LinearLayout body=vertical();body.setPadding(dp(20),dp(15),dp(20),dp(18));scroller.addView(body);
+        add(body,text(t(R.string.emergency_note),13,INK,false));space(body,12);
+        add(body,text(t(R.string.emergency_country_label),12,MUTED,true));space(body,5);
+        TextView select=button((c==null?t(R.string.emergency_select_country):c.name)+"  ▾",SECONDARY_BUTTON,TEAL);
+        body.addView(select);space(body,13);
+        if(c==null){
+            add(body,text(t(R.string.emergency_unknown_country),13,ORANGE,true));space(body,12);
+        } else {
+            add(body,text(c.name+" · "+t(R.string.emergency_verified),12,MUTED,false));space(body,10);
+            for(int i=0;i<c.numbers.length;i++){
+                final String num=c.numbers[i];
+                TextView dial=button("☎  "+c.services[i]+"  ·  "+num,0xffb8493c,WHITE);
+                dial.setContentDescription(c.services[i]+" "+num);
+                dial.setOnClickListener(v->openEmergencyDialer(num));
+                body.addView(dial);space(body,9);
+            }
+            String source=c.source;
+            TextView verify=text(t(R.string.emergency_number_source)+"  ↗",12,TEAL,true);
+            verify.setPadding(0,dp(7),0,dp(12));
+            verify.setOnClickListener(v->open(source));body.addView(verify);
+        }
+        TextView nearby=button("⌖  "+t(R.string.emergency_nearby_hospital),MINT,TEAL);
+        nearby.setOnClickListener(v->openNearbyHospitals());body.addView(nearby);space(body,12);
+        add(body,text(t(R.string.emergency_disclaimer),12,MUTED,false));
+        AlertDialog dlg=new AlertDialog.Builder(this).setTitle(t(R.string.emergency_title))
+          .setView(scroller).setNegativeButton(android.R.string.cancel,null).create();
+        select.setOnClickListener(v->{dlg.dismiss();chooseEmergencyCountry();});
+        dlg.show();
+    }
+    private void chooseEmergencyCountry() {
+        EmergencyContacts.Country[] countries=EmergencyContacts.supported();
+        String[] labels=new String[countries.length];
+        for(int i=0;i<countries.length;i++)labels[i]=countries[i].name;
+        new AlertDialog.Builder(this).setTitle(t(R.string.emergency_select_country))
+          .setItems(labels,(dialog,i)->{
+             Prefs.get(this).edit().putString("emergency_country",countries[i].code).apply();
+             showEmergencyHelp();
+          }).setNegativeButton(android.R.string.cancel,null).show();
+    }
+    private void openEmergencyDialer(String number) {
+        if(number==null || !number.matches("[0-9]{2,6}"))return;
+        try {startActivity(new Intent(Intent.ACTION_DIAL,Uri.fromParts("tel",number,null)));}
+        catch(Exception e){Toast.makeText(this,R.string.emergency_dialer_unavailable,Toast.LENGTH_LONG).show();}
+    }
+    private void openNearbyHospitals() {
+        String geo=String.format(Locale.US,"geo:%.5f,%.5f?q=emergency%%20hospital",
+            Prefs.latitude(this),Prefs.longitude(this));
+        try {startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(geo)));}
+        catch(Exception e){Toast.makeText(this,R.string.emergency_map_unavailable,Toast.LENGTH_LONG).show();}
     }
     private void showSettings() {
         section(t(R.string.preferences));
@@ -764,6 +846,7 @@ public class MainActivity extends Activity {
         locationChanged();
     }
     private void locationChanged() {
+        Prefs.get(this).edit().remove("emergency_country").apply();
         if("auto".equals(Prefs.languageSetting(this))) {recreate();return;}
         snapshot=HazardRepository.snapshot(this);draw();refresh();
         Toast.makeText(this,R.string.city_changed,Toast.LENGTH_SHORT).show();

@@ -175,4 +175,22 @@
 <string name="event_no_sources">ဤဖြစ်ရပ်အတွက် မူရင်းအစီရင်ခံစာလင့်ခ် မရှိပါ။</string>
 <string name="event_disclaimer">တည်နေရာနှင့် ရက်စွဲများသည် ရရှိထားသော မှတ်တမ်းများသာဖြစ်ပြီး ချက်ချင်းသတိပေးချက် မဟုတ်ပါ။ ဒေသဆိုင်ရာ တရားဝင်သတိပေးချက်များကို လိုက်နာပါ။</string>
 <string name="event_close">ပိတ်ရန်</string>
+
+<!-- Emergency assistance and GDACS feed status -->
+<string name="emergency_shortcut">အရေးပေါ် အကူအညီ</string>
+<string name="emergency_subline">ဒေသတွင်းဖုန်းနံပါတ်များ ရွေးပါ</string>
+<string name="emergency_open">အကူအညီ</string>
+<string name="emergency_title">အရေးပေါ် အကူအညီ</string>
+<string name="emergency_note">လက်ရှိရှိနေသော နိုင်ငံကို ရွေးပါ။ ဖုန်းကို အလိုအလျောက် မခေါ်ပါ။</string>
+<string name="emergency_country_label">အရေးပေါ်ဆက်သွယ်ရန် နိုင်ငံ</string>
+<string name="emergency_select_country">နိုင်ငံရွေးပါ</string>
+<string name="emergency_unknown_country">နိုင်ငံမသေချာပါ။ အတည်ပြုထားသော ဖုန်းနံပါတ်များအတွက် နိုင်ငံရွေးပါ။</string>
+<string name="emergency_verified">ထုတ်ပြန်ထားသော ဖုန်းနံပါတ်များ</string>
+<string name="emergency_number_source">ဖုန်းနံပါတ်ရင်းမြစ် စစ်ဆေးရန်</string>
+<string name="emergency_nearby_hospital">ရွေးထားသောနေရာအနီး ဆေးရုံများရှာရန်</string>
+<string name="emergency_disclaimer">ဤအက်ပ်သည် အရေးပေါ်ကယ်ဆယ်ရေးဌာန မဟုတ်ပါ။ ရွေးထားသော နေရာနှင့် လက်ရှိနေရာ မတူနိုင်ပါ။ အန္တရာယ်ရှိပါက ဖုန်း၏ အရေးပေါ်ခေါ်ဆိုမှုကို အသုံးပြုပါ။</string>
+<string name="emergency_dialer_unavailable">ဖုန်းခေါ်ဆိုရန် အက်ပ်မရှိပါ</string>
+<string name="emergency_map_unavailable">မြေပုံအက်ပ် မရှိပါ</string>
+<string name="gdacs_unavailable">GDACS ကို ယာယီအသုံးပြု၍ မရပါ။ သိမ်းထားသော သတင်းများကို ပြသထားပါသည်။</string>
+<string name="gdacs_no_verified">GDACS သတင်းမရရှိသေးပါ။ ပြန်လည်စစ်ဆေးပါ။</string>
 </resources>

@@ -179,4 +179,22 @@
 <string name="event_no_sources">No public source report link is provided for this event.</string>
 <string name="event_disclaimer">Locations and dates reflect available observations; they are not a live warning, forecast, or evacuation instruction. Follow local official alerts.</string>
 <string name="event_close">Close</string>
+
+<!-- Emergency assistance and GDACS feed status -->
+<string name="emergency_shortcut">Emergency assistance</string>
+<string name="emergency_subline">Local numbers • choose a service</string>
+<string name="emergency_open">Get help</string>
+<string name="emergency_title">Emergency help</string>
+<string name="emergency_note">Choose the country where you are physically located. Calls open the phone dialer. This app never makes calls automatically.</string>
+<string name="emergency_country_label">EMERGENCY COUNTRY</string>
+<string name="emergency_select_country">Choose country</string>
+<string name="emergency_unknown_country">Country not confirmed. Choose a country to view published numbers. Do not assume numbers work worldwide.</string>
+<string name="emergency_verified">published numbers</string>
+<string name="emergency_number_source">Check official emergency number source</string>
+<string name="emergency_nearby_hospital">Find hospitals near selected location</string>
+<string name="emergency_disclaimer">This app is not an emergency dispatch service. Your selected location might be different from your physical location. Phone connectivity and local response are not guaranteed. For immediate danger use the built-in emergency features on your phone.</string>
+<string name="emergency_dialer_unavailable">No phone dialer available</string>
+<string name="emergency_map_unavailable">No maps app available</string>
+<string name="gdacs_unavailable">GDACS temporarily unavailable. Showing last saved reports if available.</string>
+<string name="gdacs_no_verified">No verified GDACS bulletin is available. Refresh or check the official GDACS website.</string>
 </resources>

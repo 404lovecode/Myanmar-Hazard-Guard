@@ -9,6 +9,39 @@ import java.io.StringReader;
 /** Parse untrusted GDACS RSS into a small, display-only bulletin list. */
 public final class GdacsFeed {
     private GdacsFeed() {}
+
+    /** Normalizes the official seven-day GDACS GeoJSON API response. */
+    public static JSONObject parseApi(String payload) throws Exception {
+        JSONObject data=new JSONObject(payload);
+        JSONArray features=data.optJSONArray("features");
+        if(features==null)features=data.optJSONArray("events");
+        if(features==null)throw new IllegalArgumentException("GDACS API response was not GeoJSON");
+        JSONArray list=new JSONArray();
+        for(int i=0;i<Math.min(100,features.length());i++) {
+            JSONObject feature=features.optJSONObject(i);if(feature==null)continue;
+            JSONObject p=feature.optJSONObject("properties");
+            if(p==null)p=feature;
+            String type=p.optString("eventtype",p.optString("eventType","")).trim().toUpperCase(java.util.Locale.US);
+            String level=p.optString("alertlevel",p.optString("alertLevel","")).trim();
+            String title=p.optString("eventname",p.optString("name",p.optString("title",""))).trim();
+            if(title.isEmpty())title=type+" · "+p.optString("country","Global").trim();
+            if(type.isEmpty()||title.trim().isEmpty())continue;
+            String id=p.optString("eventid",p.optString("eventId",feature.optString("id","")));
+            String link=p.optString("url",p.optString("link","")).trim();
+            if(!isOfficial(link) && id.matches("[0-9]{1,14}") && type.matches("[A-Z]{2,3}"))
+                link="https://www.gdacs.org/report.aspx?eventid="+id+"&eventtype="+type;
+            if(!isOfficial(link))continue;
+            String date=p.optString("todate",p.optString("fromdate",p.optString("eventdate","")));
+            list.put(new JSONObject().put("title",title).put("link",link)
+               .put("pubDate",date).put("alertlevel",level).put("eventtype",type));
+        }
+        return new JSONObject().put("items",list).put("source","GDACS API");
+    }
+    private static boolean isOfficial(String link) {
+        return link.startsWith("https://www.gdacs.org/") ||
+               link.startsWith("https://gdacs.org/") ||
+               link.startsWith("https://data.gdacs.org/");
+    }
     public static JSONObject parse(String xml) throws Exception {
         XmlPullParserFactory factory=XmlPullParserFactory.newInstance();
         factory.setNamespaceAware(true);

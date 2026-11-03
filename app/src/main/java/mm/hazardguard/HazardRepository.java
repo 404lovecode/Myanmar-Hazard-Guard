@@ -29,6 +29,7 @@ public final class HazardRepository {
     public static final String AIR = "https://air-quality-api.open-meteo.com/v1/air-quality";
     public static final String EONET = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=100";
     public static final String GDACS = "https://www.gdacs.org/xml/rss.xml";
+    public static final String GDACS_API = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH";
     public static final String GDACS_BACKUP = "https://data.gdacs.org/xml/rss_7d.xml";
     private static final String[] SOURCE_NAMES={"USGS regional","Open-Meteo weather","Open-Meteo air","NOAA RONI","USGS worldwide","NASA EONET","GDACS news"};
     public static final String GEOCODE = "https://geocoding-api.open-meteo.com/v1/search";
@@ -78,7 +79,8 @@ public final class HazardRepository {
             .putString("location_"+key,locationKey).putLong("time_"+key,System.currentTimeMillis()).apply();
         return true;
     }
-    public static Snapshot update(Context c, boolean notify) {
+    public static Snapshot update(Context c, boolean notify) {return update(c,notify,false);}
+    public static Snapshot update(Context c, boolean notify, boolean forceNews) {
         final Context app=c.getApplicationContext();
         final double lat=Prefs.latitude(app), lon=Prefs.longitude(app);
         final String selected=Prefs.locationKey(app);
@@ -112,15 +114,25 @@ public final class HazardRepository {
             results[5]="ok";return true;
         }catch(Exception e){results[5]=shortError(e);return false;} }));
         tasks.add(pool.submit(() -> { try {
-            if(System.currentTimeMillis()-Prefs.get(app).getLong("time_news",0)<30*60_000L) {
+            if(!forceNews && System.currentTimeMillis()-Prefs.get(app).getLong("time_news",0)<10*60_000L) {
                 results[6]="cached";return true;
             }
-            JSONObject news;
-            try { news=GdacsFeed.parse(fetch(GDACS)); }
-            catch(Exception first) {
-                // Official alternate feed, if the primary feed is unavailable or malformed.
-                try {news=GdacsFeed.parse(fetch(GDACS_BACKUP));}
-                catch(Exception second) {second.addSuppressed(first);throw second;}
+            JSONObject news=null;
+            try {
+                SimpleDateFormat date=new SimpleDateFormat("yyyy-MM-dd",Locale.US);
+                date.setTimeZone(TimeZone.getTimeZone("UTC"));
+                String from=date.format(new Date(System.currentTimeMillis()-7L*86400_000L));
+                String to=date.format(new Date(System.currentTimeMillis()+86400_000L));
+                news=GdacsFeed.parseApi(fetch(GDACS_API+"?fromdate="+from+"&todate="+to));
+                if(news.optJSONArray("items").length()==0)throw new IOException("GDACS API had no usable events");
+            } catch(Exception apiError) {
+                try {
+                    news=GdacsFeed.parse(fetch(GDACS));
+                    if(news.optJSONArray("items").length()==0)throw new IOException("GDACS RSS empty");
+                }catch(Exception rssError) {
+                    news=GdacsFeed.parse(fetch(GDACS_BACKUP));
+                    if(news.optJSONArray("items").length()==0)throw new IOException("GDACS backup empty");
+                }
             }
             save(app,"news",news);results[6]="ok";return true;
         }catch(Exception e){results[6]=shortError(e);return false;} }));

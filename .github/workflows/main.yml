@@ -1,39 +1,40 @@
-name: Build HazardGuard World APK
-
+name: Build HazardGuard v4 APK
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
-
+    branches: [main, cozy-gdacs-emergency-2026]
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   build-apk:
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Download project
-        uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Apply v3.2 update
-        run: unzip -o HazardGuard_World_v3_2_Event_Details_Update.zip -d .
-
-      - name: Fix French translation
+      - name: Prepare Android SDK 35
         run: |
-          sed -i "s/de l'événement/de cet événement/" app/src/main/res/values-fr/strings.xml
-
-      - name: Build installable APK
-        run: bash gradlew --no-daemon assembleDebug
-
-      - name: Save APK for download
-        uses: actions/upload-artifact@v4
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Remove older custom wrapper
+        run: rm -rf gradle/wrapper
+      - uses: gradle/actions/setup-gradle@v4
         with:
-          name: HazardGuard-World-v3.2-APK
+          gradle-version: '8.11.1'
+      - name: Test emergency contact mapping
+        run: |
+          mkdir -p /tmp/hazard-tests
+          javac -d /tmp/hazard-tests app/src/main/java/mm/hazardguard/EmergencyContacts.java tools/EmergencyContactsSelfTest.java
+          java -cp /tmp/hazard-tests EmergencyContactsSelfTest
+      - name: Build APK from checked-in sources
+        run: gradle --no-daemon :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Myanmar-Hazard-Guard-v4-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
