@@ -45,6 +45,11 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
     // Accessible design tokens, switched together to preserve contrast.
@@ -79,6 +84,10 @@ public class MainActivity extends Activity {
     private boolean worldwideQuakes=false;
     private boolean headlinesLoading=false;
     private JSONObject headlines=new JSONObject();
+    private final ExecutorService inlineTranslationWorker=Executors.newSingleThreadExecutor();
+    private final HashSet<String> translationsRunning=new HashSet<>();
+    // Only on-screen views are held; redrawing clears them to avoid leaking old cards.
+    private final HashMap<String,ArrayList<TextView>> onScreenTranslations=new HashMap<>();
 
     private boolean busy=false, voiceReady=false;
     private LocationManager pendingLocationManager;
@@ -116,6 +125,8 @@ public class MainActivity extends Activity {
             pendingLocationListener=null;pendingLocationManager=null;
         }
         if(tts!=null){tts.stop();tts.shutdown();}
+        inlineTranslationWorker.shutdownNow();
+        onScreenTranslations.clear();
         super.onDestroy();
     }
     @Override public void onRequestPermissionsResult(int requestCode,String[] perms,int[] results) {
@@ -670,8 +681,8 @@ public class MainActivity extends Activity {
     // and translate a headline into the language that they understand.
     private String newsTranslationLanguage() {
         String selected=Prefs.get(this).getString("world_news_translate_language","");
-        if(selected.isEmpty())selected=newsLanguage();
-        if("mix".equals(selected))selected=Prefs.language(this);
+        // Default to the app's chosen language, not the publisher edition.
+        if(selected.isEmpty() || "mix".equals(selected))selected=Prefs.language(this);
         int index=WorldNewsFeed.langIndex(selected);
         if(index==0)index=1;
         return WorldNewsFeed.LANGS[index];
@@ -695,12 +706,22 @@ public class MainActivity extends Activity {
         if("my".equals(lang)) {
             if("Translate articles to".equals(en))return "သတင်းများ ဘာသာပြန်မည့် ဘာသာစကား";
             if("Translate headline".equals(en))return "ခေါင်းစဉ် ဘာသာပြန်ရန်";
+            if("Auto-translate headlines".equals(en))return "သတင်းခေါင်းစဉ်များ အလိုအလျောက် ဘာသာပြန်ရန်";
+            if("Read in app".equals(en))return "အက်ပ်အတွင်း ဖတ်ရန်";
+            if("Translate now".equals(en))return "ယခု ဘာသာပြန်ရန်";
+            if("Translating".equals(en))return "ဘာသာပြန်နေသည်";
+            if("Original headline".equals(en))return "မူရင်းခေါင်းစဉ်";
             if("Read translated article".equals(en))return "ဘာသာပြန်ထားသည့်သတင်း ဖတ်ရန်";
             if("Read original".equals(en))return "မူရင်းသတင်း ဖတ်ရန်";
             if("Follow selected news/app language".equals(en))return "ရွေးထားသော သတင်း / အက်ပ် ဘာသာစကားအတိုင်း";
         } else if("th".equals(lang)) {
             if("Translate articles to".equals(en))return "แปลข่าวเป็นภาษา";
             if("Translate headline".equals(en))return "แปลพาดหัวข่าว";
+            if("Auto-translate headlines".equals(en))return "แปลหัวข้อข่าวอัตโนมัติ";
+            if("Read in app".equals(en))return "อ่านในแอป";
+            if("Translate now".equals(en))return "แปลตอนนี้";
+            if("Translating".equals(en))return "กำลังแปล";
+            if("Original headline".equals(en))return "พาดหัวข่าวต้นฉบับ";
             if("Read translated article".equals(en))return "อ่านข่าวฉบับแปล";
             if("Read original".equals(en))return "อ่านต้นฉบับ";
             if("Follow selected news/app language".equals(en))return "ตามภาษาข่าวหรือแอป";
@@ -795,12 +816,13 @@ public class MainActivity extends Activity {
             }).setNegativeButton(android.R.string.cancel,null).show();
     }
     private void showGlobalHeadlines() {
+        onScreenTranslations.clear();
         LinearLayout intro=card();
         add(intro,chip("🌏  NEWS • 72H",TEAL,MINT));space(intro,8);
         add(intro,text(newsText("News from the last 72 hours"),21,INK,true));space(intro,7);
         paragraph(intro, "my".equals(Prefs.language(this))
             ?"သတင်းများသည် တရားဝင်အရေးပေါ်သတိပေးချက်များ မဟုတ်ပါ။ မူရင်းသတင်းကို အောက်တွင်ဖော်ပြထားပြီး သင်ရွေးထားသော ဘာသာစကားသို့ ဘာသာပြန်ကြည့်ရှုနိုင်သည်။"
-            :"Public news headlines are not official emergency alerts. Keep original headlines visible, and translate them using your selected language.");
+            :"Public news headlines are not official emergency alerts. Headlines automatically translate inside Hazard Guard; original titles stay visible.");
         space(intro,12);
         TextView lang=button("🌐  "+WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(newsLanguage())]+"  ▾",SECONDARY_BUTTON,TEAL);
         lang.setOnClickListener(v->selectNewsLanguage());intro.addView(lang);space(intro,9);
@@ -809,6 +831,17 @@ public class MainActivity extends Activity {
             WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(target)]+"  ▾",SECONDARY_BUTTON,TEAL);
         translation.setOnClickListener(v->selectTranslationLanguage());
         intro.addView(translation);space(intro,9);
+        LinearLayout toggleRow=horizontal();
+        TextView autoLabel=text("文  "+translateCaption("Auto-translate headlines"),13,INK,true);
+        toggleRow.addView(autoLabel,new LinearLayout.LayoutParams(0,-2,1));
+        Switch auto=new Switch(this);
+        auto.setChecked(Prefs.get(this).getBoolean("world_news_auto_translate",true));
+        auto.setOnCheckedChangeListener((button,enabled)->{
+            Prefs.get(this).edit().putBoolean("world_news_auto_translate",enabled).apply();
+            draw();
+        });
+        toggleRow.addView(auto);
+        intro.addView(toggleRow);space(intro,8);
         TextView topic=button("☷  "+WorldNewsFeed.TOPIC_NAMES[WorldNewsFeed.topicIndex(newsTopic())]+"  ▾",SECONDARY_BUTTON,TEAL);
         topic.setOnClickListener(v->selectNewsTopic());intro.addView(topic);space(intro,9);
         TextView refresh=button(headlinesLoading?"Fetching news…":"↻  Refresh latest headlines",TEAL,BUTTON_TEXT);
@@ -820,8 +853,8 @@ public class MainActivity extends Activity {
         int ok=headlines.optInt("providers",0), expected=headlines.optInt("expectedProviders",0);
         if(ok>0 && expected>ok) {space(intro,6);add(intro,text("Only "+ok+" of "+expected+" language editions responded.",11,ORANGE,true));}
         TextView original=text("my".equals(Prefs.language(this))
-            ?"ဘာသာပြန်ရန် နှိပ်ပါ • အင်တာနက် လိုအပ်သည် • ဘာသာပြန်ချက်များ မှားယွင်းနိုင်သည်"
-            :"Google News RSS • Last 72 hours • Tap Translate to open free web translation. Network needed; verify crucial safety reports with official sources.",11,MUTED,false);
+            ?"အလိုအလျောက် ဘာသာပြန်ထားသော ခေါင်းစဉ်များကို ဤနေရာတွင် ဖတ်နိုင်သည်။ အများသုံးသတင်းခေါင်းစဉ်ကို အခမဲ့ MyMemory ဝန်ဆောင်မှုသို့ ပို့နိုင်သည်။ အင်တာနက်နှင့် အသုံးပြုမှုကန့်သတ်ချက်ရှိသည်။ အရေးပေါ်အချက်အလက်ကို တရားဝင်ရင်းမြစ်မှ စစ်ဆေးပါ။"
+            :"Auto-translated headlines appear here, not in another app. Only public headline text is sent to the free MyMemory translation service when enabled. Daily limits apply; verify safety information with official sources.",11,MUTED,false);
         original.setPadding(0,dp(10),0,0);intro.addView(original);
         JSONArray items=headlines.optJSONArray("items");
         if(items==null || items.length()==0) {
@@ -829,34 +862,49 @@ public class MainActivity extends Activity {
                 "No verified recent headlines for this edition/topic. Check internet access, choose another language, or try again.");
         } else {
             section("Headlines ("+items.length()+")");
+            boolean automatic=Prefs.get(this).getBoolean("world_news_auto_translate",true);
+            int automaticallyQueued=0;
+            final String targetLanguage=newsTranslationLanguage();
             for(int i=0;i<Math.min(40,items.length());i++) {
                 JSONObject story=items.optJSONObject(i);if(story==null)continue;
                 String url=story.optString("link","");
-                LinearLayout item=card();
-                add(item,text(story.optString("title",""),15,INK,true));space(item,9);
-                String src=story.optString("source","").trim();
-                String language=story.optString("language","en").toUpperCase(Locale.ROOT);
-                long published=story.optLong("time",0);
-                add(item,text((src.isEmpty()?"News":src)+" • "+language+
-                    (published>0?" • "+time(published)+" ("+duration(published)+" ago)":""),11,MUTED,false));
-                space(item,10);
                 final String title=story.optString("title","");
-                final String targetLanguage=newsTranslationLanguage();
-                final String translateTitleUrl=NewsTranslation.headlineUrl(title,targetLanguage);
-                final String translatePageUrl=NewsTranslation.websiteUrl(url,targetLanguage);
-                if(!translateTitleUrl.isEmpty()) {
-                    TextView translate=button("文  "+translateCaption("Translate headline"),TEAL,BUTTON_TEXT);
-                    translate.setOnClickListener(v->open(translateTitleUrl));
-                    item.addView(translate);space(item,7);
+                final String language=story.optString("language","en");
+                final String from=TranslationRules.source(language,title);
+                final String key=HeadlineTranslationService.key(title,from,targetLanguage);
+                LinearLayout item=card();
+                TextView translated=text("",16,INK,true);
+                translated.setLineSpacing(dp(2),1.08f);
+                item.addView(translated);space(item,8);
+                if(!from.equals(targetLanguage)) {
+                    TextView old=text(translateCaption("Original headline")+": "+title,12,MUTED,false);
+                    item.addView(old);space(item,8);
                 }
-                if(!translatePageUrl.isEmpty()) {
-                    TextView translated=button("🌐  "+translateCaption("Read translated article"),SECONDARY_BUTTON,TEAL);
-                    translated.setOnClickListener(v->open(translatePageUrl));
-                    item.addView(translated);space(item,7);
+                String src=story.optString("source","").trim();
+                long published=story.optLong("time",0);
+                add(item,text((src.isEmpty()?"News":src)+" • "+language.toUpperCase(Locale.ROOT)+
+                    (published>0?" • "+time(published)+" ("+duration(published)+" ago)":""),11,MUTED,false));
+                space(item,11);
+                String cached=HeadlineTranslationService.cached(this,key);
+                if(from.equals(targetLanguage)) {
+                    translated.setText(title);
+                } else if(!cached.isEmpty()) {
+                    translated.setText(cached);
+                } else if(automatic && automaticallyQueued<22) {
+                    automaticallyQueued++;
+                    enqueueInlineTranslation(title,from,targetLanguage,translated);
+                } else {
+                    translated.setText(title);
+                }
+                if(!from.equals(targetLanguage)) {
+                    TextView retry=button("文  "+translateCaption("Translate now"),SECONDARY_BUTTON,TEAL);
+                    retry.setOnClickListener(v->enqueueInlineTranslation(title,from,targetLanguage,translated));
+                    item.addView(retry);space(item,7);
                 }
                 if(WorldNewsFeed.safeNewsUrl(url)) {
-                    TextView read=button("↗  "+translateCaption("Read original"),SECONDARY_BUTTON,TEAL);
-                    read.setOnClickListener(v->open(url));
+                    TextView read=button("↗  "+translateCaption("Read in app"),TEAL,BUTTON_TEXT);
+                    final String original=url;
+                    read.setOnClickListener(v->showInAppNews(original,title,from,targetLanguage));
                     item.addView(read);
                 }
             }
@@ -869,6 +917,47 @@ public class MainActivity extends Activity {
         openKit.setOnClickListener(v->show72HourKit());kit.addView(openKit);
         TextView back=button("‹  Back to World disasters",SECONDARY_BUTTON,TEAL);
         back.setOnClickListener(v->{page=4;draw();});pageBody.addView(back);
+    }
+    /** Keep the user on this screen and update only the headline TextViews. */
+    private void enqueueInlineTranslation(String title,String from,String target,TextView targetView) {
+        if(title.isEmpty())return;
+        if(from.equals(target)) {targetView.setText(title);return;}
+        final String key=HeadlineTranslationService.key(title,from,target);
+        String saved=HeadlineTranslationService.cached(this,key);
+        if(!saved.isEmpty()){targetView.setText(saved);return;}
+        ArrayList<TextView> waiting=onScreenTranslations.get(key);
+        if(waiting==null){waiting=new ArrayList<>();onScreenTranslations.put(key,waiting);}
+        if(!waiting.contains(targetView))waiting.add(targetView);
+        targetView.setText(translateCaption("Translating")+"…");
+        if(!translationsRunning.add(key))return;
+        inlineTranslationWorker.execute(()->{
+            HeadlineTranslationService.Result result=
+                HeadlineTranslationService.translate(getApplicationContext(),title,from,target);
+            ui.post(()->{
+                translationsRunning.remove(key);
+                ArrayList<TextView> views=onScreenTranslations.remove(key);
+                if(isFinishing() || isDestroyed() || views==null)return;
+                String message=result.ok?result.text:
+                    ("my".equals(Prefs.language(this))
+                        ?"ဘာသာပြန်၍ မရနိုင်ပါ • မူရင်းခေါင်းစဉ်ကို ဖတ်နိုင်သည်"
+                        :"Translation unavailable • original headline shown");
+                for(TextView t:views) {
+                    t.setText(message);
+                    t.setTextColor(result.ok?INK:ORANGE);
+                }
+            });
+        });
+    }
+    private void showInAppNews(String url,String title,String source,String target) {
+        if(!WorldNewsFeed.safeNewsUrl(url))return;
+        Intent intent=new Intent(this,NewsReaderActivity.class);
+        intent.putExtra("url",url);
+        intent.putExtra("language",target);
+        intent.putExtra("title",title);
+        String cached=HeadlineTranslationService.cached(this,
+            HeadlineTranslationService.key(title,source,target));
+        intent.putExtra("translation",cached);
+        startActivity(intent);
     }
     private void show72HourKit() {
         ScrollView scroller=new ScrollView(this);

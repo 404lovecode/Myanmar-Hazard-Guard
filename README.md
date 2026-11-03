@@ -64,3 +64,36 @@ GDACS is credited to the Global Disaster Alert and Coordination System. See http
 The translated headline link is URL encoded and capped in length.
 Original story links must be valid HTTPS URLs. Unit checks run during the
 GitHub Actions build before packaging.
+
+
+## v7.0 — AUTOMATIC translation INSIDE Hazard Guard
+
+- World News now **auto-translates up to 22 visible headlines** into the
+  reader's chosen app language (default) or their separate translation language.
+  English, mixed-language, Myanmar/Burmese and other supported editions are
+  independent of the reader's preferred translation language.
+- Translations are shown **directly in each World News card** (with the
+  original-language headline also visible), not via Google Translate links
+  or a separate app. The switch "Auto-translate headlines" allows opting out.
+- A **Read in app** button launches a safe, integrated WebView article reader.
+  It attempts to show the full publisher page through Google Translate's
+  website translation proxy and offers an Original tab if that fails.
+  Some publisher sites and regions block website translation; full article
+  translation **cannot be guaranteed**. RSS has headlines, not full articles.
+- When auto-translation is enabled, only **public headline text** is sent from
+  the phone to MyMemory's documented free HTTPS endpoint. No personal location,
+  contacts or chat content are sent. The provider may log these headlines.
+- No API keys, account, credits or subscription. Free anonymous MyMemory usage
+  is limited to approximately 5,000 characters/day per IP (including use by
+  other devices sharing that IP), and 500 UTF-8 bytes per request. The app caps
+  its own daily volume below that and caches successful translations for
+  offline reading. Translation may fail due to quotas, poor language support,
+  connectivity or provider changes: original text remains visible and a
+  failure is never mislabeled as a successful translation.
+- Translation accuracy varies, especially for Burmese and emergency-related
+  content. **Never treat machine-translated news as an official warning.**
+  Verify emergency guidance with authoritative primary sources.
+
+References: https://mymemory.translated.net/doc/spec.php
+https://mymemory.translated.net/doc/usagelimits.php
+https://support.google.com/translate/answer/2534559?hl=en

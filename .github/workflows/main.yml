@@ -1,7 +1,7 @@
-name: Build HazardGuard v6 APK
+name: Build HazardGuard v7 APK
 on:
   push:
-    branches: [main, cozy-gdacs-emergency-2026, world-news-72h, world-news-translation-v6]
+    branches: [main, cozy-gdacs-emergency-2026, world-news-72h, world-news-translation-v6, in-app-auto-news-translation-v7]
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,10 +36,31 @@ jobs:
           mkdir -p /tmp/news-translation-tests
           javac -encoding UTF-8 -d /tmp/news-translation-tests app/src/main/java/mm/hazardguard/NewsTranslation.java tools/NewsTranslationSelfTest.java
           java -cp /tmp/news-translation-tests NewsTranslationSelfTest
+      - name: Test in-app Burmese translation input handling
+        run: |
+          mkdir -p /tmp/news-inline-tests
+          javac -encoding UTF-8 -d /tmp/news-inline-tests app/src/main/java/mm/hazardguard/TranslationRules.java tools/TranslationRulesSelfTest.java
+          java -cp /tmp/news-inline-tests TranslationRulesSelfTest
+      - name: Check live Burmese translation provider (nonblocking)
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, json
+          try:
+              url="https://api.mymemory.translated.net/get?"+urllib.parse.urlencode({"q":"Safety news about Myanmar floods","langpair":"en|my-MM"})
+              with urllib.request.urlopen(url,timeout=12) as response:
+                  data=json.load(response)
+              translated=data.get("responseData",{}).get("translatedText","")
+              print("MyMemory response:",data.get("responseStatus"),"translated:",translated[:200])
+              if int(data.get("responseStatus",0))!=200 or not translated or translated.lower()=="safety news about myanmar floods":
+                  raise SystemExit("Provider failed or did not return translated text")
+          except Exception as exc:
+              raise SystemExit("Public provider temporarily unavailable: "+str(exc))
+          PY
       - name: Build APK from checked-in sources
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Myanmar-Hazard-Guard-v6-APK
+          name: Myanmar-Hazard-Guard-v7-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

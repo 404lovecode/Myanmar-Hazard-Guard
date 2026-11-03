@@ -14,6 +14,7 @@
         android:roundIcon="@drawable/ic_guard_launcher"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:supportsRtl="true">
+        <activity android:name=".NewsReaderActivity" android:exported="false"/>
         <activity android:name=".MainActivity" android:exported="true" android:configChanges="fontScale">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
