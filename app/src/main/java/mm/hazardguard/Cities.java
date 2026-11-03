@@ -1,16 +1,78 @@
 package mm.hazardguard;
 
+/** Offline starter city presets; any other city may be found by online search. */
 public final class Cities {
     private Cities() {}
-    public static final String[] NAMES = {
-        "Yangon", "Mandalay", "Naypyidaw", "Sagaing", "Bago", "Magway",
-        "Taunggyi", "Myitkyina", "Pathein", "Mawlamyine", "Sittwe", "Lashio", "Kalemyo", "Hpa-An"
-    };
-    public static final String[] MY_NAMES = {
-        "ရန်ကုန်", "မန္တလေး", "နေပြည်တော်", "စစ်ကိုင်း", "ပဲခူး", "မကွေး",
-        "တောင်ကြီး", "မြစ်ကြီးနား", "ပုသိမ်", "မော်လမြိုင်", "စစ်တွေ", "လားရှိုး", "ကလေး", "ဘားအံ"
-    };
-    public static final double[] LAT = {16.8409,21.9588,19.7633,21.8787,17.3352,20.1496,20.7892,25.3946,16.7792,16.4905,20.1462,22.9359,23.1880,16.8909};
-    public static final double[] LON = {96.1735,96.0891,96.0785,95.9787,96.4797,94.9328,97.0378,97.3990,94.7321,97.6278,92.8980,97.7523,94.0120,97.6338};
+    public static final String[] NAMES = {"Yangon", "Mandalay", "Naypyidaw", "Sagaing", "Bago",
+        "Magway", "Taunggyi", "Myitkyina", "Pathein", "Mawlamyine",
+        "Sittwe", "Lashio", "Kalemyo", "Hpa-An", "Bangkok",
+        "Chiang Mai", "Phnom Penh", "Hanoi", "Ho Chi Minh City", "Vientiane",
+        "Kuala Lumpur", "Singapore", "Jakarta", "Manila", "Tokyo",
+        "Osaka", "Seoul", "Beijing", "Shanghai", "Taipei",
+        "Hong Kong", "Delhi", "Mumbai", "Kathmandu", "Dhaka",
+        "Islamabad", "Colombo", "Dubai", "Istanbul", "Cairo",
+        "Nairobi", "Cape Town", "London", "Paris", "Berlin",
+        "Rome", "Madrid", "Oslo", "Moscow", "New York",
+        "Los Angeles", "San Francisco", "Seattle", "Mexico City", "Vancouver",
+        "Toronto", "São Paulo", "Lima", "Santiago", "Buenos Aires",
+        "Sydney", "Melbourne", "Auckland", "Wellington", "Suva",
+        "Honolulu"};
+    public static final String[] MY_NAMES = {"ရန်ကုန်", "မန္တလေး", "နေပြည်တော်", "စစ်ကိုင်း", "ပဲခူး",
+        "မကွေး", "တောင်ကြီး", "မြစ်ကြီးနား", "ပုသိမ်", "မော်လမြိုင်",
+        "စစ်တွေ", "လားရှိုး", "ကလေး", "ဘားအံ", "ဘန်ကောက်",
+        "ချင်းမိုင်", "ဖနွမ်းပင်", "ဟနွိုင်း", "ဟိုချီမင်း", "ဗီယင်ကျန်း",
+        "ကွာလာလမ်ပူ", "စင်ကာပူ", "ဂျကာတာ", "မနီလာ", "တိုကျို",
+        "အိုဆာကာ", "ဆိုးလ်", "ပေကျင်း", "ရှန်ဟိုင်း", "ထိုင်ပေ",
+        "ဟောင်ကောင်", "ဒေလီ", "မွမ်ဘိုင်း", "ခတ္တမန္ဒူ", "ဒါကာ",
+        "အစ္စလာမာဘတ်", "ကိုလံဘို", "ဒူဘိုင်း", "အစ္စတန်ဘူလ်", "ကိုင်ရို",
+        "နိုင်ရိုဘီ", "ကိပ်တောင်း", "လန်ဒန်", "ပါရီ", "ဘာလင်",
+        "ရောမ", "မက်ဒရစ်", "အော်စလို", "မော်စကို", "နယူးယောက်",
+        "လော့စ်အိန်ဂျလိစ်", "ဆန်ဖရန်စစ္စကို", "ဆီယက်တဲလ်", "မက္ကဆီကိုစီးတီး", "ဗန်ကူးဗား",
+        "တိုရွန်တို", "ဆော်ပေါ်လို", "လီမာ", "ဆန်တီယာဂို", "ဗျူနိုအေးရိစ်",
+        "ဆစ်ဒနီ", "မဲလ်ဘုန်း", "အော့ကလန်", "ဝယ်လင်တန်", "ဆူးဗာ",
+        "ဟိုနိုလူလူ"};
+    public static final String[] COUNTRY = {"Myanmar", "Myanmar", "Myanmar", "Myanmar", "Myanmar",
+        "Myanmar", "Myanmar", "Myanmar", "Myanmar", "Myanmar",
+        "Myanmar", "Myanmar", "Myanmar", "Myanmar", "Thailand",
+        "Thailand", "Cambodia", "Vietnam", "Vietnam", "Laos",
+        "Malaysia", "Singapore", "Indonesia", "Philippines", "Japan",
+        "Japan", "South Korea", "China", "China", "Taiwan",
+        "Hong Kong", "India", "India", "Nepal", "Bangladesh",
+        "Pakistan", "Sri Lanka", "United Arab Emirates", "Türkiye", "Egypt",
+        "Kenya", "South Africa", "United Kingdom", "France", "Germany",
+        "Italy", "Spain", "Norway", "Russia", "United States",
+        "United States", "United States", "United States", "Mexico", "Canada",
+        "Canada", "Brazil", "Peru", "Chile", "Argentina",
+        "Australia", "Australia", "New Zealand", "New Zealand", "Fiji",
+        "United States"};
+    public static final double[] LAT = {16.84090, 21.95880, 19.76330, 21.87870, 17.33520,
+        20.14960, 20.78920, 25.39460, 16.77920, 16.49050,
+        20.14620, 22.93590, 23.18800, 16.89090, 13.75630,
+        18.78830, 11.55640, 21.02850, 10.82310, 17.97570,
+        3.13900, 1.35210, -6.20880, 14.59950, 35.67620,
+        34.69370, 37.56650, 39.90420, 31.23040, 25.03300,
+        22.31930, 28.61390, 19.07600, 27.71720, 23.81030,
+        33.68440, 6.92710, 25.20480, 41.00820, 30.04440,
+        -1.29210, -33.92490, 51.50740, 48.85660, 52.52000,
+        41.90280, 40.41680, 59.91390, 55.75580, 40.71280,
+        34.05220, 37.77490, 47.60620, 19.43260, 49.28270,
+        43.65320, -23.55050, -12.04640, -33.44890, -34.60370,
+        -33.86880, -37.81360, -36.84850, -41.28650, -18.14160,
+        21.30990};
+    public static final double[] LON = {96.17350, 96.08910, 96.07850, 95.97870, 96.47970,
+        94.93280, 97.03780, 97.39900, 94.73210, 97.62780,
+        92.89800, 97.75230, 94.01200, 97.63380, 100.50180,
+        98.98530, 104.92820, 105.85420, 106.62970, 102.63310,
+        101.68690, 103.81980, 106.84560, 120.98420, 139.65030,
+        135.50230, 126.97800, 116.40740, 121.47370, 121.56540,
+        114.16940, 77.20900, 72.87770, 85.32400, 90.41250,
+        73.04790, 79.86120, 55.27080, 28.97840, 31.23570,
+        36.82190, 18.42410, -0.12780, 2.35220, 13.40500,
+        12.49640, -3.70380, 10.75220, 37.61730, -74.00600,
+        -118.24370, -122.41940, -122.33210, -99.13320, -123.12070,
+        -79.38320, -46.63330, -77.04280, -70.66930, -58.38160,
+        151.20930, 144.96310, 174.76330, 174.77670, 178.44190,
+        -157.85810};
     public static String name(int i, boolean my) { return (my ? MY_NAMES : NAMES)[Math.max(0,Math.min(i,NAMES.length-1))]; }
+    public static String labeled(int i, boolean my) { return name(i,my)+" · "+COUNTRY[Math.max(0,Math.min(i,COUNTRY.length-1))]; }
 }
