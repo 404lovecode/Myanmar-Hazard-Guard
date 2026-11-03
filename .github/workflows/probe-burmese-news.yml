@@ -1,40 +1,20 @@
-name: Inspect DVB public news site structure
+name: Inspect DVB story cards
 on:
   push:
     branches: [burmese-publishers-v8]
-  workflow_dispatch:
-permissions:
-  contents: read
+permissions: {contents: read}
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
     steps:
-      - name: Verify DVB public site headlines
+      - name: Find story dates in public HTML
         run: |
           python3 - <<'PY'
-          import urllib.request,re,html
-          from html.parser import HTMLParser
-          class Articles(HTMLParser):
-              def __init__(self):super().__init__();self.href='';self.tag='';self.matches=[]
-              def handle_starttag(self,tag,attrs):
-                  if tag=='a': self.href=dict(attrs).get('href','');self.tag='a'
-                  elif tag=='time':self.tag='time'
-              def handle_endtag(self,tag):
-                  if tag in ('a','time'):self.tag=''
-              def handle_data(self,data):
-                  t=data.strip()
-                  if len(t)>25 and self.tag=='a' and self.href.startswith('/'):
-                      self.matches.append((t[:85],self.href[:100]))
-          targets=["https://burmese.dvb.no/","https://burmese.dvb.no/news","https://burmese.dvb.no/rss","https://burmese.dvb.no/rss.xml","https://burmese.dvb.no/feed.xml","https://dvb.no/feed","https://english.dvb.no/feed"]
-          for url in targets:
-              try:
-                  r=urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'}),timeout=10)
-                  raw=r.read(600000).decode('utf-8','replace')
-                  p=Articles();p.feed(raw)
-                  print("ENDPOINT",url,"HTTP",r.status,"mime",r.headers.get('Content-Type'),"bytes",len(raw))
-                  print("ARTICLES",p.matches[:12])
-                  for needle in ['__NEXT_DATA__','application/ld+json','article:published_time','datePublished','<article','rel="alternate"','"date":"','"publishedAt"']:
-                      print("HAS",needle,raw.find(needle))
-              except Exception as e:print("ENDPOINT",url,"ERROR",str(e)[:160])
+          import urllib.request,re
+          s=urllib.request.urlopen(urllib.request.Request("https://burmese.dvb.no/",headers={'User-Agent':'Mozilla/5.0'}),timeout=15).read().decode('utf-8','replace')
+          for term in ['href="/post/903793"','href="/post/817119"','"date"','November 3, 2026','publishedAt','"published"','datetime=','2026-11-03','article:published_time']:
+              i=s.find(term)
+              print("TERM",repr(term),i)
+              if i>=0:print("EXCERPT",repr(s[max(0,i-250):i+950]))
+          print("POST_LINKS",len(re.findall(r'href="/post/[0-9]+"',s)))
           PY
