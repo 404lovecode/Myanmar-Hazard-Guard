@@ -1,0 +1,38 @@
+name: Verify Burmese news feed endpoints
+on:
+  push:
+    branches: [burmese-publishers-v8]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check public news sources (non-destructive)
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.parse,xml.etree.ElementTree as ET
+          feeds={
+            "BBC Burmese official RSS":"https://feeds.bbci.co.uk/burmese/rss.xml",
+            "BBC Burmese fallback":"https://feeds.bbci.co.uk/burmese/rss",
+            "DVB Burmese RSS":"https://burmese.dvb.no/feed",
+            "DVB Burmese RSS alternative":"https://burmese.dvb.no/rss.xml",
+            "Irrawaddy Burmese RSS":"https://burma.irrawaddy.com/feed",
+            "Google News DVB site":"https://news.google.com/rss/search?q="+urllib.parse.quote("site:burmese.dvb.no when:3d")+"&hl=my&gl=MM&ceid=MM:my",
+            "Google News Irrawaddy site":"https://news.google.com/rss/search?q="+urllib.parse.quote("site:burma.irrawaddy.com when:3d")+"&hl=my&gl=MM&ceid=MM:my",
+            "Google News BBC site":"https://news.google.com/rss/search?q="+urllib.parse.quote("site:bbc.com/burmese when:3d")+"&hl=my&gl=MM&ceid=MM:my"
+          }
+          for name,url in feeds.items():
+            try:
+              r=urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0 (HazardGuard/8.0; public RSS feed reader)","Accept":"application/rss+xml, application/xml,text/xml"}),timeout=12)
+              content=r.read(250000);mime=r.headers.get("Content-Type","")
+              try:
+                root=ET.fromstring(content);items=root.findall(".//item");titles=[e.findtext("title") or "" for e in items[:2]]
+                print(name,": status",r.status,"mime",mime,"items",len(items),"titles",repr(titles))
+              except Exception as e:
+                print(name,": status",r.status,"mime",mime,"non-RSS",repr(content[:150]),"parse error",str(e)[:120])
+            except Exception as e:
+              print(name,": FAILED",type(e).__name__,str(e)[:160])
+          PY
