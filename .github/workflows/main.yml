@@ -1,7 +1,7 @@
-name: Build HazardGuard v7 APK
+name: Build HazardGuard v8 APK
 on:
   push:
-    branches: [main, cozy-gdacs-emergency-2026, world-news-72h, world-news-translation-v6, in-app-auto-news-translation-v7]
+    branches: [main, cozy-gdacs-emergency-2026, world-news-72h, world-news-translation-v6, in-app-auto-news-translation-v7, burmese-publishers-v8]
   workflow_dispatch:
 permissions:
   contents: read
@@ -57,10 +57,33 @@ jobs:
           except Exception as exc:
               raise SystemExit("Public provider temporarily unavailable: "+str(exc))
           PY
+      - name: Verify Burmese publisher headline feeds
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import urllib.request,xml.etree.ElementTree as ET
+          for name,url in [
+            ("BBC Burmese","https://feeds.bbci.co.uk/burmese/rss.xml"),
+            ("The Irrawaddy","https://burma.irrawaddy.com/feed"),
+            ("DVB Burmese","https://burmese.dvb.no/")
+          ]:
+            try:
+              req=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0"})
+              with urllib.request.urlopen(req,timeout=12) as response:
+                data=response.read(500000)
+              if name!="DVB Burmese":
+                root=ET.fromstring(data)
+                assert len(root.findall(".//item"))>0,name+" empty RSS"
+              else:
+                assert b"/post/" in data and b"2026" in data,name+" page missing stories"
+              print(name,"feed reachable:",len(data),"bytes")
+            except Exception as exc:
+              print(name,"temporarily unavailable:",exc)
+          PY
       - name: Build APK from checked-in sources
         run: gradle --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Myanmar-Hazard-Guard-v7-APK
+          name: Myanmar-Hazard-Guard-v8-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

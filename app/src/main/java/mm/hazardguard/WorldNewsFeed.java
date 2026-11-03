@@ -36,6 +36,19 @@ public final class WorldNewsFeed {
     public static final String[] TOPIC_NAMES = {
         "World headlines", "Protests & civic events", "Disasters", "Food & humanitarian", "Health", "Technology", "Climate"
     };
+    public static final String[] SOURCES = {"global","myanmar","bbc","dvb","irrawaddy"};
+    public static final String[] SOURCE_NAMES = {
+        "🌐 World / All publishers",
+        "🇲🇲 Myanmar News · BBC + DVB + Irrawaddy",
+        "BBC News မြန်မာ",
+        "DVB သတင်း",
+        "ဧရာဝတီ · The Irrawaddy"
+    };
+    public static int sourceIndex(String code) {
+        for(int i=0;i<SOURCES.length;i++)if(SOURCES[i].equals(code))return i;
+        return 0;
+    }
+    public static String source(String code) {return SOURCES[sourceIndex(code)];}
     // Public Google News editions; an edition may be temporarily unavailable.
     public static final String[] LANGS = {
         "mix","en","my","th","es","fr","hi","id","de","pt","ar","ja","ko","zh",
@@ -97,23 +110,53 @@ public final class WorldNewsFeed {
     private static String encode(String text) {
         try{return URLEncoder.encode(text,"UTF-8");}catch(Exception ex){return text;}
     }
-    private static String storageKey(String lang,String topic) {return "world_news_v5_"+lang+"_"+topic;}
+    private static String storageKey(String lang,String topic,String publisher) {
+        // Preserve v5/v6/v7 global-news cache.
+        if("global".equals(publisher))return "world_news_v5_"+lang+"_"+topic;
+        return "world_news_v8_"+publisher+"_"+lang+"_"+topic;
+    }
     public static JSONObject cached(Context context,String lang,String topic) {
-        String key=storageKey(lang,topic);
+        return cached(context,lang,topic,"global");
+    }
+    public static JSONObject cached(Context context,String lang,String topic,String publisher) {
+        String key=storageKey(lang,topic,source(publisher));
         try{return new JSONObject(context.getSharedPreferences("hazardguard_v1",Context.MODE_PRIVATE).getString(key,"{}"));}
         catch(Exception ignored){return new JSONObject();}
     }
     public static JSONObject load(Context context,String lang,String topic,boolean force) {
+        return load(context,lang,topic,"global",force);
+    }
+    public static JSONObject load(Context context,String lang,String topic,String publisher,boolean force) {
+        publisher=source(publisher);
         SharedPreferences prefs=context.getApplicationContext().getSharedPreferences("hazardguard_v1",Context.MODE_PRIVATE);
-        JSONObject saved=cached(context,lang,topic);
+        JSONObject saved=cached(context,lang,topic,publisher);
         long previous=saved.optLong("updatedAt",0);
         if(!force && previous>0 && System.currentTimeMillis()-previous<CACHE_MS) return saved;
         try {
             ArrayList<JSONObject> results=new ArrayList<>();
-            int success=0;
-            if("mix".equals(lang)) {
+            int success=0, expected=1;
+            if(!"global".equals(publisher)) {
+                String[] outlets="myanmar".equals(publisher)?
+                    new String[]{"bbc","dvb","irrawaddy"}:
+                    new String[]{publisher};
+                expected=outlets.length;
+                ExecutorService pool=Executors.newFixedThreadPool(outlets.length);
+                ArrayList<Future<ArrayList<JSONObject>>> tasks=new ArrayList<>();
+                for(String outlet:outlets)tasks.add(pool.submit(new Callable<ArrayList<JSONObject>>() {
+                    @Override public ArrayList<JSONObject> call() throws Exception {
+                        return BurmesePublisherFeed.fetch(outlet);
+                    }
+                }));
+                pool.shutdown();
+                for(Future<ArrayList<JSONObject>> future:tasks) {
+                    try {results.addAll(future.get(14,TimeUnit.SECONDS));success++;}
+                    catch(Exception ex){future.cancel(true);}
+                }
+                pool.shutdownNow();
+            } else if("mix".equals(lang)) {
                 ExecutorService pool=Executors.newFixedThreadPool(4);
                 ArrayList<Future<ArrayList<JSONObject>>> tasks=new ArrayList<>();
+                expected=MIX.length;
                 for(String edition:MIX) tasks.add(pool.submit(new Callable<ArrayList<JSONObject>>() {
                     @Override public ArrayList<JSONObject> call() throws Exception {return fetchEdition(edition,topic);}
                 }));
@@ -126,7 +169,7 @@ public final class WorldNewsFeed {
             } else {
                 results.addAll(fetchEdition(lang,topic));success=1;
             }
-            if(success==0)throw new Exception("No news feeds could be reached");
+            if(success==0)throw new Exception("News publishers could not be reached");
             Collections.sort(results,new Comparator<JSONObject>() {
                 @Override public int compare(JSONObject a,JSONObject b) {
                     return Long.compare(b.optLong("time"),a.optLong("time"));
@@ -139,16 +182,18 @@ public final class WorldNewsFeed {
                 String key=item.optString("link","");
                 String label=item.optString("title","").toLowerCase(Locale.ROOT);
                 if(key.isEmpty() || seenLinks.contains(key) || seenTitles.contains(label))continue;
+                if(!safeNewsUrl(key))continue;
                 seenLinks.add(key);seenTitles.add(label);
                 if(items.length()<45)items.put(item);
             }
             JSONObject data=new JSONObject().put("items",items).put("updatedAt",System.currentTimeMillis())
-                .put("providers",success).put("expectedProviders","mix".equals(lang)?MIX.length:1)
-                .put("language",lang).put("topic",topic);
-            prefs.edit().putString(storageKey(lang,topic),data.toString()).apply();
+                .put("providers",success).put("expectedProviders",expected)
+                .put("language",lang).put("topic",topic).put("publisher",publisher);
+            prefs.edit().putString(storageKey(lang,topic,publisher),data.toString()).apply();
             return data;
         }catch(Exception ex) {
-            try{return new JSONObject(saved.toString()).put("loadError",ex.getMessage()==null?"Feed unavailable":ex.getMessage());}
+            try{return new JSONObject(saved.toString())
+                .put("loadError","News source unavailable. Pull to retry or choose another publisher.");}
             catch(Exception ignored){return new JSONObject();}
         }
     }

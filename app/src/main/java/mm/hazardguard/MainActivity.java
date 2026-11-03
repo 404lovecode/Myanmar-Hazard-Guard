@@ -106,7 +106,7 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(lightMode?
             (View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR):0);
         snapshot=HazardRepository.snapshot(this);
-        headlines=WorldNewsFeed.cached(this, newsLanguage(), newsTopic());
+        headlines=WorldNewsFeed.cached(this, newsLanguage(), newsTopic(), newsSource());
         Notifications.setup(this);
         MonitorJob.schedule(this);
         tts=new TextToSpeech(this,status -> { voiceReady=status==TextToSpeech.SUCCESS; if(voiceReady) configureSpeech(); });
@@ -676,6 +676,27 @@ public class MainActivity extends Activity {
         String topic=Prefs.get(this).getString("world_news_topic","world");
         return WorldNewsFeed.TOPICS[WorldNewsFeed.topicIndex(topic)];
     }
+    private String newsSource() {
+        String source=Prefs.get(this).getString("world_news_source","");
+        if(source.isEmpty())return "my".equals(Prefs.language(this))?"myanmar":"global";
+        return WorldNewsFeed.source(source);
+    }
+    private void selectNewsSource() {
+        new AlertDialog.Builder(this)
+            .setTitle("my".equals(Prefs.language(this))?"သတင်းရင်းမြစ်များ":"Choose news source")
+            .setSingleChoiceItems(WorldNewsFeed.SOURCE_NAMES,
+                WorldNewsFeed.sourceIndex(newsSource()),(dialog,which)->{
+                    Prefs.get(this).edit().putString("world_news_source",
+                        WorldNewsFeed.SOURCES[which]).apply();
+                    dialog.dismiss();
+                    headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic(),newsSource());
+                    draw();loadHeadlines(false);
+                }).setNegativeButton(android.R.string.cancel,null).show();
+    }
+    private void openMyanmarHeadlines() {
+        Prefs.get(this).edit().putString("world_news_source","myanmar").apply();
+        openHeadlines();
+    }
 
     // Translation is a separate preference: readers can follow any news edition
     // and translate a headline into the language that they understand.
@@ -779,11 +800,18 @@ public class MainActivity extends Activity {
         space(entry,11);
         TextView explore=button("↗  "+newsText("Global news"),TEAL,BUTTON_TEXT);
         explore.setOnClickListener(v->openHeadlines());entry.addView(explore);
+        space(entry,9);
+        TextView myanmar=button("🇲🇲  "+("my".equals(Prefs.language(this))
+            ?"မြန်မာသတင်း • BBC / DVB / ဧရာဝတီ"
+            :"Myanmar News • BBC / DVB / The Irrawaddy"),SECONDARY_BUTTON,TEAL);
+        myanmar.setOnClickListener(v->openMyanmarHeadlines());
+        entry.addView(myanmar);
         if(showKit) {space(entry,9);TextView kit=button("✚  "+newsText("72-hour emergency kit"),SECONDARY_BUTTON,TEAL);
             kit.setOnClickListener(v->show72HourKit());entry.addView(kit);}
     }
     private void openHeadlines() {
-        page=6;headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic());draw();loadHeadlines(false);
+        page=6;headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic(),newsSource());
+        draw();loadHeadlines(false);
     }
     @Override public void onBackPressed() {
         if(page==6){page=4;draw();}else super.onBackPressed();
@@ -791,13 +819,19 @@ public class MainActivity extends Activity {
     private void loadHeadlines(boolean force) {
         if(headlinesLoading)return;
         headlinesLoading=true;draw();
-        final String language=newsLanguage(), topic=newsTopic();
+        final String language=newsLanguage(), topic=newsTopic(), source=newsSource();
         new Thread(()->{
-            JSONObject data=WorldNewsFeed.load(getApplicationContext(),language,topic,force);
+            JSONObject data=WorldNewsFeed.load(getApplicationContext(),language,topic,source,force);
             ui.post(()->{
                 if(isFinishing() || isDestroyed())return;
-                headlinesLoading=false;headlines=data;
-                if(page==6 && language.equals(newsLanguage()) && topic.equals(newsTopic()))draw();
+                headlinesLoading=false;
+                if(page==6 && language.equals(newsLanguage()) &&
+                    topic.equals(newsTopic()) && source.equals(newsSource())) {
+                    headlines=data;draw();
+                } else if(page==6) {
+                    headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic(),newsSource());
+                    draw();loadHeadlines(false);
+                }
             });
         },"WorldNews-rss").start();
     }
@@ -805,27 +839,36 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("News language / edition")
             .setSingleChoiceItems(WorldNewsFeed.NAMES,WorldNewsFeed.langIndex(newsLanguage()),(dialog,which)->{
                 Prefs.get(this).edit().putString("world_news_language",WorldNewsFeed.LANGS[which]).apply();
-                dialog.dismiss();headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic());draw();loadHeadlines(false);
+                dialog.dismiss();headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic(),newsSource());draw();loadHeadlines(false);
             }).setNegativeButton(android.R.string.cancel,null).show();
     }
     private void selectNewsTopic() {
         new AlertDialog.Builder(this).setTitle("News topic")
             .setSingleChoiceItems(WorldNewsFeed.TOPIC_NAMES,WorldNewsFeed.topicIndex(newsTopic()),(dialog,which)->{
                 Prefs.get(this).edit().putString("world_news_topic",WorldNewsFeed.TOPICS[which]).apply();
-                dialog.dismiss();headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic());draw();loadHeadlines(false);
+                dialog.dismiss();headlines=WorldNewsFeed.cached(this,newsLanguage(),newsTopic(),newsSource());draw();loadHeadlines(false);
             }).setNegativeButton(android.R.string.cancel,null).show();
     }
     private void showGlobalHeadlines() {
         onScreenTranslations.clear();
         LinearLayout intro=card();
         add(intro,chip("🌏  NEWS • 72H",TEAL,MINT));space(intro,8);
-        add(intro,text(newsText("News from the last 72 hours"),21,INK,true));space(intro,7);
+        add(intro,text("global".equals(newsSource())?newsText("News from the last 72 hours"):
+            ("my".equals(Prefs.language(this))?"မြန်မာသတင်းများ • နောက်ဆုံး ၇၂ နာရီ":
+                "Myanmar News • Last 72 hours"),21,INK,true));space(intro,7);
         paragraph(intro, "my".equals(Prefs.language(this))
             ?"သတင်းများသည် တရားဝင်အရေးပေါ်သတိပေးချက်များ မဟုတ်ပါ။ မူရင်းသတင်းကို အောက်တွင်ဖော်ပြထားပြီး သင်ရွေးထားသော ဘာသာစကားသို့ ဘာသာပြန်ကြည့်ရှုနိုင်သည်။"
             :"Public news headlines are not official emergency alerts. Headlines automatically translate inside Hazard Guard; original titles stay visible.");
         space(intro,12);
-        TextView lang=button("🌐  "+WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(newsLanguage())]+"  ▾",SECONDARY_BUTTON,TEAL);
-        lang.setOnClickListener(v->selectNewsLanguage());intro.addView(lang);space(intro,9);
+        TextView sourceChoice=button("📰  "+WorldNewsFeed.SOURCE_NAMES[
+            WorldNewsFeed.sourceIndex(newsSource())]+"  ▾",SECONDARY_BUTTON,TEAL);
+        sourceChoice.setOnClickListener(v->selectNewsSource());
+        intro.addView(sourceChoice);space(intro,9);
+        if("global".equals(newsSource())) {
+            TextView lang=button("🌐  "+WorldNewsFeed.NAMES[
+                WorldNewsFeed.langIndex(newsLanguage())]+"  ▾",SECONDARY_BUTTON,TEAL);
+            lang.setOnClickListener(v->selectNewsLanguage());intro.addView(lang);space(intro,9);
+        }
         String target=newsTranslationLanguage();
         TextView translation=button("🌐  "+translateCaption("Translate articles to")+"  •  "+
             WorldNewsFeed.NAMES[WorldNewsFeed.langIndex(target)]+"  ▾",SECONDARY_BUTTON,TEAL);
@@ -842,8 +885,16 @@ public class MainActivity extends Activity {
         });
         toggleRow.addView(auto);
         intro.addView(toggleRow);space(intro,8);
-        TextView topic=button("☷  "+WorldNewsFeed.TOPIC_NAMES[WorldNewsFeed.topicIndex(newsTopic())]+"  ▾",SECONDARY_BUTTON,TEAL);
-        topic.setOnClickListener(v->selectNewsTopic());intro.addView(topic);space(intro,9);
+        if("global".equals(newsSource())) {
+            TextView topic=button("☷  "+WorldNewsFeed.TOPIC_NAMES[
+                WorldNewsFeed.topicIndex(newsTopic())]+"  ▾",SECONDARY_BUTTON,TEAL);
+            topic.setOnClickListener(v->selectNewsTopic());intro.addView(topic);space(intro,9);
+        } else {
+            add(intro,text("my".equals(Prefs.language(this))
+                ?"BBC၊ DVB နှင့် ဧရာဝတီ၏ သတင်းများ။ DVB ၏ သတင်းအချို့မှာ ရက်စွဲသာ သိရှိနိုင်သည်။"
+                :"Public headlines from the selected publisher(s). DVB sometimes provides only a publication date, not an exact time.",12,MUTED,false));
+            space(intro,9);
+        }
         TextView refresh=button(headlinesLoading?"Fetching news…":"↻  Refresh latest headlines",TEAL,BUTTON_TEXT);
         refresh.setEnabled(!headlinesLoading);refresh.setOnClickListener(v->loadHeadlines(true));intro.addView(refresh);
         long updated=headlines.optLong("updatedAt",0);
@@ -851,7 +902,9 @@ public class MainActivity extends Activity {
         String failed=headlines.optString("loadError","");
         if(!failed.isEmpty()){space(intro,9);add(intro,text("Unable to refresh. Showing saved headlines if available. " + failed,12,ORANGE,true));}
         int ok=headlines.optInt("providers",0), expected=headlines.optInt("expectedProviders",0);
-        if(ok>0 && expected>ok) {space(intro,6);add(intro,text("Only "+ok+" of "+expected+" language editions responded.",11,ORANGE,true));}
+        if(ok>0 && expected>ok) {space(intro,6);add(intro,text("Only "+ok+" of "+expected+
+            ("global".equals(newsSource())?" language editions":" publishers")+
+            " responded. Cached headlines may be incomplete.",11,ORANGE,true));}
         TextView original=text("my".equals(Prefs.language(this))
             ?"အလိုအလျောက် ဘာသာပြန်ထားသော ခေါင်းစဉ်များကို ဤနေရာတွင် ဖတ်နိုင်သည်။ အများသုံးသတင်းခေါင်းစဉ်ကို အခမဲ့ MyMemory ဝန်ဆောင်မှုသို့ ပို့နိုင်သည်။ အင်တာနက်နှင့် အသုံးပြုမှုကန့်သတ်ချက်ရှိသည်။ အရေးပေါ်အချက်အလက်ကို တရားဝင်ရင်းမြစ်မှ စစ်ဆေးပါ။"
             :"Auto-translated headlines appear here, not in another app. Only public headline text is sent to the free MyMemory translation service when enabled. Daily limits apply; verify safety information with official sources.",11,MUTED,false);
@@ -882,8 +935,15 @@ public class MainActivity extends Activity {
                 }
                 String src=story.optString("source","").trim();
                 long published=story.optLong("time",0);
+                String publishedLabel="";
+                if(published>0) {
+                    if(story.optBoolean("dateOnly",false))
+                        publishedLabel=" • "+new SimpleDateFormat("dd MMM yyyy",Locale.ENGLISH)
+                            .format(new Date(published))+" (date only)";
+                    else publishedLabel=" • "+time(published)+" ("+duration(published)+" ago)";
+                }
                 add(item,text((src.isEmpty()?"News":src)+" • "+language.toUpperCase(Locale.ROOT)+
-                    (published>0?" • "+time(published)+" ("+duration(published)+" ago)":""),11,MUTED,false));
+                    publishedLabel,11,MUTED,false));
                 space(item,11);
                 String cached=HeadlineTranslationService.cached(this,key);
                 if(from.equals(targetLanguage)) {

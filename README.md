@@ -97,3 +97,37 @@ GitHub Actions build before packaging.
 References: https://mymemory.translated.net/doc/spec.php
 https://mymemory.translated.net/doc/usagelimits.php
 https://support.google.com/translate/answer/2534559?hl=en
+
+
+## v8.0 — BBC Burmese, DVB Burmese and The Irrawaddy
+
+- **Myanmar News (🇲🇲)** entry points are present on Home and World screens.
+  Burmese-language app users get the Myanmar publishers feed by default.
+- In World → Global News choose **News source**:
+  World / All publishers, Myanmar News (three sources), BBC News မြန်မာ,
+  DVB သတင်း, or ဧရာဝတီ / The Irrawaddy.
+- BBC News Burmese uses the BBC's public `https://feeds.bbci.co.uk/burmese/rss.xml`.
+  The Irrawaddy's Burmese edition uses `https://burma.irrawaddy.com/feed`.
+  DVB Burmese currently serves its public home page, not a functioning RSS at
+  `/feed`: this version extracts only dated, linked headlines from the
+  public `https://burmese.dvb.no/` listing and links back to the original
+  article. It deliberately does not guess missing dates. DVB listing date
+  entries have *day precision only*, clearly marked in the UI.
+- Headline cards credit each publisher and preserve the original Burmese text.
+  The existing user-selected automatic in-app translation still works for
+  English/non-Burmese headlines.
+- All three sources are independent fetches. If one fails, reachable sources
+  still show up, with a source-count warning. Previously cached reports remain
+  available offline. The news feed is a **72-hour window**, not a real-time
+  warning service or a guarantee of completeness.
+- The news source selector is separate from worldwide topic and language
+  controls; publisher-specific feeds show all recent articles rather than
+  pretending to filter by unrelated worldwide categories.
+- News is attributed, not endorsed or rewritten. No account, news API key or
+  payment is required. Respect each publisher's terms for public feeds;
+  article copyright remains with its publisher.
+
+Publisher sites:
+https://www.bbc.com/burmese
+https://burmese.dvb.no/
+https://burma.irrawaddy.com/
