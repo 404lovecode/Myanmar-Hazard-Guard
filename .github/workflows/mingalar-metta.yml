@@ -1,0 +1,56 @@
+name: Build Mingalar Metta v1 Android APK
+on:
+  push:
+    branches: [mingalar-metta-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK 35
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Remove old host project's wrapper
+        run: rm -rf gradle/wrapper
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Extract independent source project
+        run: unzip -q Mingalar-Metta-v1-source.zip
+      - name: Verify prayer library, privacy and original assets
+        run: |
+          python3 mingalar-metta/tools/validate_content.py
+          python3 - <<'PY'
+          import wave, pathlib
+          root=pathlib.Path("mingalar-metta/app/src/main")
+          with wave.open(str(root/"res/raw/gong.wav")) as w:
+              assert w.getnchannels()==1 and w.getnframes()>10000
+          assert (root/"res/drawable/ic_metta.png").read_bytes().startswith(b"\x89PNG")
+          assert "android.permission" not in (root/"AndroidManifest.xml").read_text()
+          print("Original offline gong, icon and zero Android permissions verified.")
+          PY
+      - name: Compile native Android app
+        working-directory: mingalar-metta
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Verify signed installable APK
+        run: |
+          APK=mingalar-metta/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -10
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mingalar-Metta-v1-APK
+          path: mingalar-metta/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
