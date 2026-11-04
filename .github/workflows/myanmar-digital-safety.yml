@@ -1,0 +1,66 @@
+name: Myanmar Digital Safety · Android APK
+on:
+  push:
+    branches: [myanmar-digital-safety-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout build host
+        uses: actions/checkout@v4
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK API 35
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Isolate new app from existing Gradle wrapper
+        run: rm -rf gradle/wrapper
+      - name: Prepare Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Unpack independent Digital Safety project
+        run: unzip -q Myanmar-Digital-Safety-source.zip
+      - name: Verify Burmese lessons and safety quizzes
+        run: |
+          mkdir -p /tmp/safety-tests
+          javac -encoding UTF-8 -d /tmp/safety-tests \
+            myanmar-digital-safety/app/src/main/java/com/myanmardigitalsafety/LearnData.java \
+            myanmar-digital-safety/tools/ContentSelfTest.java
+          java -cp /tmp/safety-tests ContentSelfTest
+      - name: Verify APK requests zero Android permissions
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root=ET.parse("myanmar-digital-safety/app/src/main/AndroidManifest.xml").getroot()
+          permissions=[x.attrib.get("{http://schemas.android.com/apk/res/android}name") for x in root if x.tag=="uses-permission"]
+          assert permissions==[],f"Unexpected permissions: {permissions}"
+          print("Android manifest privacy test passed: zero permissions")
+          PY
+      - name: Compile independent Android APK
+        working-directory: myanmar-digital-safety
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Validate installable APK and package
+        run: |
+          APK=myanmar-digital-safety/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -8
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Myanmar-Digital-Safety-v1-APK
+          path: myanmar-digital-safety/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
