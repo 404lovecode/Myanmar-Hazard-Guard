@@ -1,0 +1,71 @@
+name: Myanmar Digital Safety v2 · Phone and Ad Protection APK
+on:
+  push:
+    branches: [myanmar-digital-safety-v2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK API 35
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - run: rm -rf gradle/wrapper
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Unpack independent Digital Safety v2 project
+        run: unzip -q Myanmar-Digital-Safety-v2-source.zip
+      - name: Test lessons, call screening, ad rules and DNS packets
+        run: |
+          mkdir -p /tmp/safety-tests
+          javac -encoding UTF-8 -d /tmp/safety-tests \
+            myanmar-digital-safety-v2/app/src/main/java/com/myanmardigitalsafety/{LearnData,PhoneBlockRules,AdDomainRules,DnsPackets}.java \
+            myanmar-digital-safety-v2/tools/{ContentSelfTest,ProtectionRulesSelfTest,DnsPacketsSelfTest}.java
+          for test in ContentSelfTest ProtectionRulesSelfTest DnsPacketsSelfTest; do java -cp /tmp/safety-tests "$test"; done
+      - name: Verify optional permissions and Android services
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          file="myanmar-digital-safety-v2/app/src/main/AndroidManifest.xml"
+          root=ET.parse(file).getroot()
+          ns="{http://schemas.android.com/apk/res/android}"
+          permissions={i.attrib.get(ns+"name") for i in root if i.tag=="uses-permission"}
+          assert "android.permission.INTERNET" in permissions
+          assert "android.permission.ACCESS_NETWORK_STATE" in permissions
+          for p in ("READ_CONTACTS","READ_CALL_LOG","READ_SMS","CALL_PHONE","ACCESS_FINE_LOCATION","RECORD_AUDIO"):
+              assert "android.permission."+p not in permissions, p
+          services=root.find("application").findall("service")
+          names={s.attrib.get(ns+"name"):s for s in services}
+          assert ".ScamCallScreeningService" in names
+          assert ".LocalDnsVpnService" in names
+          assert names[".LocalDnsVpnService"].attrib.get(ns+"foregroundServiceType")=="specialUse"
+          print("Permission and role/VPN service declarations verified")
+          PY
+      - name: Compile installable Android APK
+        working-directory: myanmar-digital-safety-v2
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Verify APK package, version and signature
+        run: |
+          APK=myanmar-digital-safety-v2/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -10
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Myanmar-Digital-Safety-v2-APK
+          path: myanmar-digital-safety-v2/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
