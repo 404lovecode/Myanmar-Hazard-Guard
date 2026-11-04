@@ -1,0 +1,62 @@
+name: Mingalar Bridge - Android APK
+on:
+  push:
+    branches: [mingalar-bridge-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Isolate independent build from existing wrapper
+        run: rm -rf gradle/wrapper
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Extract Mingalar Bridge source
+        run: unzip -q Mingalar-Bridge-v1-source.zip
+      - name: Test all 100 offline phrases
+        working-directory: mingalar-bridge
+        run: python3 tools/validate_content.py
+      - name: Verify privacy and speech declarations
+        run: |
+          python3 - <<'PY'
+          from xml.etree import ElementTree as ET
+          file="mingalar-bridge/app/src/main/AndroidManifest.xml"
+          root=ET.parse(file).getroot()
+          assert not any(tag.tag.startswith("uses-permission") for tag in root), "Unexpected Android permission!"
+          queries=root.find("queries")
+          assert queries is not None, "Missing text-to-speech engine visibility"
+          java=open("mingalar-bridge/app/src/main/java/com/mingalar/bridge/MainActivity.java",encoding="utf-8").read()
+          assert "isNetworkConnectionRequired()" in java
+          assert "getVoices()" in java
+          assert "putStringSet" in java
+          print("Privacy + offline voice selection + favorites verified.")
+          PY
+      - name: Compile installable Android APK
+        working-directory: mingalar-bridge
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Inspect APK signature and package
+        run: |
+          APK=mingalar-bridge/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -10
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mingalar-Bridge-v1-APK
+          path: mingalar-bridge/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
