@@ -1,0 +1,83 @@
+name: Build Myanmar Reading Library v1 APK
+on:
+  push:
+    branches: [myanmar-reading-library-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-library:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout build host
+        uses: actions/checkout@v4
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK 35
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Remove older host Gradle wrapper
+        run: rm -rf gradle/wrapper
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Extract independent Myanmar Reading Library
+        run: unzip -q Myanmar-Reading-Library-v1-source.zip
+      - name: Verify original Burmese stories and offline privacy
+        working-directory: myanmar-reading-library
+        run: python3 tools/preflight.py
+      - name: Check Java compilation with included Burmese readings
+        working-directory: myanmar-reading-library
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac
+      - name: Bundle and validate full public-domain world classics
+        working-directory: myanmar-reading-library
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -u tools/prepare_library.py
+      - name: Check final offline library for actual books, not placeholders
+        working-directory: myanmar-reading-library
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("app/src/main/assets")
+          items=json.loads((root/"library.json").read_text(encoding="utf-8"))
+          en=[x for x in items if x.get("language")=="en"]
+          my=[x for x in items if x.get("language")=="my"]
+          assert len(en)>=25 and len(my)==12,(len(en),len(my))
+          assert all((root/x["asset"]).stat().st_size>15000 for x in en)
+          assert all((root/x["asset"]).stat().st_size>300 for x in my)
+          for id in ("g1342","g84","g345","g36"):
+              assert any(x["id"]==id for x in en),"Missing classic "+id
+          print("COMPLETE VERIFIED NOVELS",len(en))
+          print("ORIGINAL BURMESE READINGS",len(my))
+          print("TOTAL OFFLINE BOOKS",len(items))
+          print("Longest text characters",max(x["chars"] for x in en))
+          PY
+      - name: Compile signed installable Android APK
+        working-directory: myanmar-reading-library
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Check APK package, signature and content
+        run: |
+          APK=myanmar-reading-library/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -10
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+          unzip -l "$APK" | grep 'assets/books/g1342.txt'
+          unzip -l "$APK" | grep 'assets/books/my001.txt'
+          unzip -t "$APK" | tail -1
+      - name: Publish APK and source manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: Myanmar-Reading-Library-v1-APK
+          path: |
+            myanmar-reading-library/app/build/outputs/apk/debug/app-debug.apk
+            myanmar-reading-library/library-build-report.json
+          if-no-files-found: error
