@@ -1,0 +1,72 @@
+name: Mingalar Metta v3 - Complete Canon and Original Design APK
+on:
+  push:
+    branches: [mingalar-metta-v3]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK API 35
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Remove legacy host wrapper
+        run: rm -rf gradle/wrapper
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Extract independent Mingalar Metta v3 source
+        run: unzip -q Mingalar-Metta-v3-source.zip
+      - name: Bundle 15 complete CC0 Pali and English canonical works
+        working-directory: mingalar-metta
+        run: python3 tools/fetch_canon.py
+      - name: Bundle public domain offline Three Refuges audio
+        working-directory: mingalar-metta
+        run: python3 tools/fetch_audio.py
+      - name: Validate complete corpus and privacy guarantees
+        working-directory: mingalar-metta
+        run: |
+          python3 tools/validate_content.py
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("app/src/main/assets/library.json")
+          entries=json.loads(p.read_text())
+          full=[e for e in entries if e.get("kind")=="canonical"]
+          print("Complete canonical texts:",len(full))
+          print("Canonical sample:",[(e["id"],len(e["pali"]),len(e["englishText"])) for e in full])
+          assert len(full)==15
+          assert len([a for a in full if len(a["pali"])>1000])>=5
+          audio=Path("app/src/main/res/raw/refuge_chant.ogg")
+          assert audio.stat().st_size>3000000
+          assert audio.read_bytes()[:4]==b"OggS"
+          print("Offline audio:",audio.stat().st_size,"bytes")
+          PY
+      - name: Compile installable Android APK
+        working-directory: mingalar-metta
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Verify Android package, image, audio and signing
+        run: |
+          APK=mingalar-metta/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -10
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify "$APK"
+          unzip -l "$APK" | grep refuge_chant
+          unzip -l "$APK" | grep 'assets/library.json'
+          unzip -t "$APK" | tail -1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mingalar-Metta-v3-APK
+          path: mingalar-metta/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
